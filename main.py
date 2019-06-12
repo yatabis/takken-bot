@@ -9,7 +9,7 @@ import requests
 # CONST
 DSN = os.environ.get('DATABASE_URL')
 CAT = os.environ.get('CHANNEL_ACCESS_TOKEN')
-REPLY_EP = ""
+REPLY_EP = "https://api.line.me/v2/bot/message/reply"
 BROADCAST_EP = "https://api.line.me/v2/bot/message/broadcast"
 DEFAULT_HEADER = {'Content-type': 'application/json', 'Authorization': f"Bearer {CAT}"}
 
