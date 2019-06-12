@@ -27,16 +27,40 @@ def get_question():
 
 
 # LINE API
-def broadcast_message(text):
-    body = {'messages': [{'type': 'text', 'text': text}]}
+def broadcast_message(body):
     req = requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
     return req
+
+
+def make_question_message(q):
+    message = {'messages': [
+        {'type': "text",
+         'text': q['question'],
+         'quickReply': {'items': [
+             {'type': 'action',
+              'action': {
+                  'type': 'postback',
+                  'label': "○",
+                  'data': 'True',
+                  'text': "○"
+              }},
+             {'type': 'action',
+              'action': {
+                  'type': 'postback',
+                  'label': "×",
+                  'data': 'False',
+                  'text': "×"
+              }}
+         ]}}
+    ]}
+    return message
 
 
 @route('/question', method='POST')
 def question():
     q = get_question()
-    res = broadcast_message(q['question'])
+    q_message = make_question_message(q)
+    res = broadcast_message(q_message)
     if res.status_code == 200:
         return 'OK'
     else:
