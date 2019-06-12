@@ -114,7 +114,7 @@ def question():
 
 @route('/line-callback', method='POST')
 def line_callback():
-    event_list = request.json['event']
+    event_list = request.json['events']
     ret = []
     for event in event_list:
         event_type = event['type']
