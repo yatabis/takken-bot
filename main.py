@@ -137,7 +137,7 @@ def check_db(table='all'):
         with open_pg() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 if table == 'all':
-                    cur.execute('select relname from pg_class where relkind = "r"')
+                    cur.execute('select relname from pg_class where relkind = r')
                     result = cur.fetchall()
                 else:
                     cur.execute('select * from %s', (table,))
