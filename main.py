@@ -9,6 +9,7 @@ import requests
 # CONST
 DSN = os.environ.get('DATABASE_URL')
 CAT = os.environ.get('CHANNEL_ACCESS_TOKEN')
+REPLY_EP = ""
 BROADCAST_EP = "https://api.line.me/v2/bot/message/broadcast"
 DEFAULT_HEADER = {'Content-type': 'application/json', 'Authorization': f"Bearer {CAT}"}
 
@@ -27,6 +28,11 @@ def get_question():
 
 
 # LINE API
+def reply_message(body):
+    req = requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
+    return req
+
+
 def broadcast_message(body):
     req = requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
     return req
@@ -41,14 +47,14 @@ def make_question_message(q):
               'action': {
                   'type': 'postback',
                   'label': "○",
-                  'data': 'True',
+                  'data': f"qid={q['id']}&answer=True",
                   'text': "○"
               }},
              {'type': 'action',
               'action': {
                   'type': 'postback',
                   'label': "×",
-                  'data': 'False',
+                  'data': f"qid={q['id']}&answer=False",
                   'text': "×"
               }}
          ]}}
@@ -56,6 +62,19 @@ def make_question_message(q):
     return message
 
 
+# callback
+def reply_question(token):
+    q = get_question()
+    q_message = make_question_message(q)
+    q_message['replyToken'] = token
+    res = reply_message(q_message)
+    if res.status_code == 200:
+        return 'OK'
+    else:
+        return res.text
+
+
+# routing
 @route('/question', method='POST')
 def question():
     q = get_question()
@@ -69,7 +88,18 @@ def question():
 
 @route('/line-callback', method='POST')
 def line_callback():
-    return 'OK'
+    event_list = request.json['event']
+    ret = []
+    for event in event_list:
+        event_type = event['type']
+        reply_token = event['replyToken']
+        if event_type == 'postback':
+            pass
+        elif event_type == 'message' and event['message']['type'] == 'text' and "問題" in event['message']['text']:
+            ret.append(reply_question(reply_token))
+        else:
+            ret.append('OK')
+    return '\n'.join(ret)
 
 
 if __name__ == '__main__':
