@@ -31,7 +31,7 @@ def get_description(qid):
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select * from questions where id = %s', (qid,))
-            (record,) = cur.fetchone()
+            record = cur.fetchone()
     return dict(record)
 
 
