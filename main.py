@@ -27,15 +27,27 @@ def get_question():
     return dict(random.choice(questions))
 
 
+def get_description(qid):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from questions where id = %s', (qid,))
+            (record,) = cur.fetchone()
+    return dict(record)
+
+
 # LINE API
 def reply_message(body):
-    req = requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
-    return req
+    return requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
+
+
+def reply_text(text, token):
+    body = {'messages': [{'type': 'text', 'text': text}],
+            'replyToken': token}
+    return reply_message(body)
 
 
 def broadcast_message(body):
-    req = requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
-    return req
+    return requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
 
 def make_question_message(q):
@@ -63,6 +75,20 @@ def make_question_message(q):
 
 
 # callback
+def check_answer(postback):
+    token = postback['replyToken']
+    data = postback['postback']['data']
+    qid, ans = [p.split('=')[1] for p in data.split('&')]
+    record = get_description(qid)
+    text = "正解です！\n" if ans == str(record['answer']) else "不正解です！\n"
+    text += f"・解説：\n{record['description']}"
+    res = reply_text(text, token)
+    if res.status_code == 200:
+        return 'OK'
+    else:
+        return res.text
+
+
 def reply_question(token):
     q = get_question()
     q_message = make_question_message(q)
@@ -94,7 +120,7 @@ def line_callback():
         event_type = event['type']
         reply_token = event['replyToken']
         if event_type == 'postback':
-            pass
+            ret.append(check_answer(event))
         elif event_type == 'message' and event['message']['type'] == 'text' and "問題" in event['message']['text']:
             ret.append(reply_question(reply_token))
         else:
