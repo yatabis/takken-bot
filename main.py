@@ -131,12 +131,12 @@ def line_callback():
 
 
 @route('/db/check/<table>', method='GET')
-def check_db(table=None):
+def check_db(table='all'):
     debug = os.environ.get('DEBUG', False)
     if debug:
         with open_pg() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                if table is None:
+                if table == 'all':
                     cur.execute('select relname from pg_class where relkind = "r"')
                     result = cur.fetchall()
                 else:
