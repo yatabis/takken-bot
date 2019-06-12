@@ -33,10 +33,10 @@ def broadcast_message(text):
     return req
 
 
-@route('/question', method='GET')
+@route('/question', method='POST')
 def question():
     q = get_question()
-    res = broadcast_message(q)
+    res = broadcast_message(q['question'])
     if res.status_code == 200:
         return 'OK'
     else:
