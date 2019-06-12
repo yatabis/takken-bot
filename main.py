@@ -131,14 +131,18 @@ def line_callback():
 
 
 @route('/db/check/<table>', method='GET')
-def check_db(table):
+def check_db(table=None):
     debug = os.environ.get('DEBUG', False)
     if debug:
         with open_pg() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute('select * from %s', (table,))
-                records = cur.fetchall()
-        return pformat(dict(records))
+                if table is None:
+                    cur.execute('select relname from pg_class where relkind = "r"')
+                    result = cur.fetchall()
+                else:
+                    cur.execute('select * from %s', (table,))
+                    result = cur.fetchall()
+        return pformat(dict(result))
     else:
         return abort(404)
 
