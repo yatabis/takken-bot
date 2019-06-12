@@ -1,6 +1,7 @@
-from bottle import route, request, run
+from bottle import route, request, run, abort
 import json
 import os
+from pprint import pformat, pprint
 import psycopg2
 from psycopg2.extras import DictCursor
 import random
@@ -117,6 +118,7 @@ def line_callback():
     event_list = request.json['events']
     ret = []
     for event in event_list:
+        pprint(event)
         event_type = event['type']
         reply_token = event['replyToken']
         if event_type == 'postback':
@@ -126,6 +128,19 @@ def line_callback():
         else:
             ret.append('OK')
     return '\n'.join(ret)
+
+
+@route('/db/check/<table>', method='GET')
+def check_db(table):
+    debug = os.environ.get('DEBUG', False)
+    if debug:
+        with open_pg() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute('select * from %s', (table,))
+                records = cur.fetchall()
+        return pformat(dict(records))
+    else:
+        return abort(404)
 
 
 if __name__ == '__main__':
