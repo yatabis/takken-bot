@@ -94,7 +94,7 @@ def make_answer_message(qid, ans, token):
     text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
     text += "正解です！" if judge else "不正解！"
     text += f"【解説】\n{q['description']}"
-    message = {'message': [
+    message = {'messages': [
         {
             'type': 'sticker',
             'packageId': stk[0],
