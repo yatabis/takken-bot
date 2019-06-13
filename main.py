@@ -135,7 +135,7 @@ def question():
         return res.text
 
 
-@route('/list', method='GET')
+@route('/list/', method='GET')
 def list_preregistered():
     form_id = os.environ.get('FORM_ID')
     target = "%27%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%81%AE%E5%9B%9E%E7%AD%94%201%27!A1:E1000"
