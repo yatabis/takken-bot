@@ -135,6 +135,7 @@ def question():
         return res.text
 
 
+# FIXME: ルーティングを直す
 @route('/list/', method='GET')
 def list_preregistered():
     form_id = os.environ.get('FORM_ID')
@@ -149,12 +150,12 @@ def list_preregistered():
         chapter = q['章番号（半角数字のみ）']
         number = q['問題番号（半角数字のみ）']
         if part != p_latest:
-            text += '\n' + part + '\n'
+            text += '<br>' + part + '<br>'
             p_latest = part
         if chapter != c_latest:
-            text += f"第{chapter}章\n"
+            text += f"第{chapter}章<br>"
             c_latest = chapter
-        text += f"Q.{number} {q.get('問題文', '')[:5]}...\n"
+        text += f"Q.{number} {q.get('問題文', '')[:5]}...<br>"
     return text
 
 
