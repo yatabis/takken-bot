@@ -155,7 +155,7 @@ def list_preregistered():
         if chapter != c_latest:
             text += f"第{chapter}章<br>"
             c_latest = chapter
-        text += f"Q.{number} {q.get('問題文', '')[:5]}...<br>"
+        text += f"Q.{number} {q.get('問題文', '')[:16]}...<br>"
     return text
 
 
