@@ -53,24 +53,26 @@ def broadcast_message(body):
 
 def make_question_message(q):
     message = {'messages': [
-        {'type': "text",
-         'text': q['question'],
-         'quickReply': {'items': [
-             {'type': 'action',
-              'action': {
-                  'type': 'postback',
-                  'label': "○",
-                  'data': f"qid={q['id']}&answer=True",
-                  'text': "○"
-              }},
-             {'type': 'action',
-              'action': {
-                  'type': 'postback',
-                  'label': "×",
-                  'data': f"qid={q['id']}&answer=False",
-                  'text': "×"
-              }}
-         ]}}
+        {
+            'type': 'template',
+            'altText': f"{q['part']} chap{q['chapter']} num{q['number']}",
+            'template': {
+                'type': 'confirm',
+                'text': q['question'],
+                'actions': [
+                    {
+                        'type': 'postback',
+                        'label': "○",
+                        'data': f"qid={q['id']}&answer=True",
+                    },
+                    {
+                        'type': 'postback',
+                        'label': "×",
+                        'data': f"qid={q['id']}&answer=False",
+                    }
+                ]
+            }
+        }
     ]}
     return message
 
