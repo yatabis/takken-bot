@@ -135,28 +135,14 @@ def question():
         return res.text
 
 
-# FIXME: ルーティングを直す
-@route('/list/', method='GET')
+@route('/list', method='GET')
 def list_preregistered():
     form_id = os.environ.get('FORM_ID')
     target = "%27%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%81%AE%E5%9B%9E%E7%AD%94%201%27!A1:E1000"
     ep = f"https://asia-northeast1-sheetstowebapi.cloudfunctions.net/api?id={form_id}&range={target}"
     req = requests.get(ep)
     questions = req.json()
-    p_latest, c_latest = "", ""
-    text = "<h1>現在予備登録されている問題一覧：</h1>"
-    for q in sorted(questions, key=lambda x: x['タイムスタンプ']):
-        part = q['パートを選択']
-        chapter = q['章番号（半角数字のみ）']
-        number = q['問題番号（半角数字のみ）']
-        if part != p_latest:
-            text += f"<h2>{part}</h2>"
-            p_latest = part
-        if chapter != c_latest:
-            text += f"<h3>第{chapter}章</h3>"
-            c_latest = chapter
-        text += f"<p>Q{number}. {q.get('問題文', '')[:16]}...</p>"
-    return text
+    return template('questions-list', questions=sorted(questions, key=lambda x: x['タイムスタンプ']))
 
 
 @route('/line-callback', method='POST')

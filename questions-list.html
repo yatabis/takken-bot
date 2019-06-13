@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta http-equiv='X-UA-Compatible' content='ie=edge'>
+  <title>予備登録済み問題一覧</title>
+  <link rel='stylesheet' href='https://unpkg.com/ress/dist/ress.min.css'>
+</head>
+<body>
+<h1>現在予備登録されている問題一覧</h1>
+% p_latest, c_latest = "", ""
+% for q in questions:
+  % if q.get('パートを選択') != p_latest:
+    <h2>{{ q.get('パートを選択') }}</h2>
+    % p_latest = q.get('パートを選択')
+  %end
+  % if q.get('章番号（半角数字のみ）') != c_latest:
+    <h3>第{{ q.get('章番号（半角数字のみ）') }}章</h3>
+    % c_latest = q.get('章番号（半角数字のみ）')
+  %end
+    <p>Q{{ q.get('問題番号（半角数字のみ）') }}. {{ q.get('問題文')[:16] }}...</p>
+% end
+</body>
+</html>
