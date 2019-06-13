@@ -90,7 +90,7 @@ def make_question_message(q):
 def make_answer_message(qid, ans, token):
     q = get_description(qid)
     judge = ans == str(q['answer'])
-    stk = OK_STICKER if judge else NG_STICKER
+    stk = random.choice(OK_STICKER if judge else NG_STICKER)
     text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
     text += "正解です！" if judge else "不正解！"
     text += f"【解説】\n{q['description']}"
@@ -102,7 +102,7 @@ def make_answer_message(qid, ans, token):
         },
         {
             'type': 'text',
-            'text': ""
+            'text': text
         }
     ], 'replyToken': token}
     return message
@@ -178,10 +178,12 @@ def list_preregistered():
 
 @route('/line-callback', method='POST')
 def line_callback():
+    debug = os.environ.get('DEBUG', False)
     event_list = request.json['events']
     ret = []
     for event in event_list:
-        pprint(event)
+        if debug:
+            pprint(event)
         event_type = event['type']
         reply_token = event['replyToken']
         if event_type == 'postback':
@@ -196,6 +198,8 @@ def line_callback():
         else:
             ret.append('OK')
     # FIXME: レスポンスの形式を統一させる。どのタイミングでテキストにするか。
+    if debug:
+        pprint('\n'.join(ret))
     return '\n'.join(ret)
 
 
