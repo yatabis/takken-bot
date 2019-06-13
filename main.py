@@ -1,4 +1,4 @@
-from bottle import route, request, run, abort
+from bottle import route, request, run, template, abort
 import json
 import os
 from pprint import pformat, pprint
