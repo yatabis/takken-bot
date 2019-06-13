@@ -135,6 +135,29 @@ def question():
         return res.text
 
 
+@route('/list', method='GET')
+def list_preregistered():
+    form_id = os.environ.get('FORM_ID')
+    target = "%27%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%81%AE%E5%9B%9E%E7%AD%94%201%27!A1:E1000"
+    ep = f"https://asia-northeast1-sheetstowebapi.cloudfunctions.net/api?id={form_id}&range={target}"
+    req = requests.get(ep)
+    questions = req.json()
+    p_latest, c_latest = "", ""
+    text = "現在予備登録されている問題一覧："
+    for q in sorted(questions, key=lambda x: x['タイムスタンプ']):
+        part = q['パートを選択']
+        chapter = q['章番号（半角数字のみ）']
+        number = q['問題番号（半角数字のみ）']
+        if part != p_latest:
+            text += '\n' + part + '\n'
+            p_latest = part
+        if chapter != c_latest:
+            text += f"第{chapter}章\n"
+            c_latest = chapter
+        text += f"Q.{number} {q.get('問題文', '')[:5]}...\n"
+    return text
+
+
 @route('/line-callback', method='POST')
 def line_callback():
     event_list = request.json['events']
@@ -154,9 +177,11 @@ def line_callback():
                 ret.append(pre_registration(reply_token))
         else:
             ret.append('OK')
+    # FIXME: レスポンスの形式を統一させる。どのタイミングでテキストにするか。
     return '\n'.join(ret)
 
 
+# debug
 @route('/db/check/<table>', method='GET')
 def check_db(table='all'):
     debug = os.environ.get('DEBUG', False)
