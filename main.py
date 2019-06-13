@@ -144,18 +144,18 @@ def list_preregistered():
     req = requests.get(ep)
     questions = req.json()
     p_latest, c_latest = "", ""
-    text = "現在予備登録されている問題一覧："
+    text = "<h2>現在予備登録されている問題一覧：</h2>"
     for q in sorted(questions, key=lambda x: x['タイムスタンプ']):
         part = q['パートを選択']
         chapter = q['章番号（半角数字のみ）']
         number = q['問題番号（半角数字のみ）']
         if part != p_latest:
-            text += '<br>' + part + '<br>'
+            text += '<h3>' + part + '</h3>'
             p_latest = part
         if chapter != c_latest:
-            text += f"第{chapter}章<br>"
+            text += f"<h4>第{chapter}章</h4>"
             c_latest = chapter
-        text += f"Q.{number} {q.get('問題文', '')[:16]}...<br>"
+        text += f"<p>Q{number}. {q.get('問題文', '')[:16]}...</p>"
     return text
 
 
