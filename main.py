@@ -13,6 +13,14 @@ CAT = os.environ.get('CHANNEL_ACCESS_TOKEN')
 REPLY_EP = "https://api.line.me/v2/bot/message/reply"
 BROADCAST_EP = "https://api.line.me/v2/bot/message/broadcast"
 DEFAULT_HEADER = {'Content-type': 'application/json', 'Authorization': f"Bearer {CAT}"}
+OK_STICKER = ((11537, 52002734), (11537, 52002735), (11537, 52002740), (11537, 52002748), (11537, 52002752),
+              (11538, 51626498), (11538, 51626500), (11538, 51626501),
+              (11539, 52114113), (11539, 52114117), (11539, 52114123))
+NG_STICKER = ((11537, 52002744), (11537, 52002749), (11537, 52002753), (11537, 52002754), (11537, 52002760),
+              (11537, 52002766), (11537, 52002769), (11537, 52002778), (11537, 52002779),
+              (11538, 51626504), (11538, 51626506), (11538, 51626511), (11538, 51626512), (11538, 51626514),
+              (11538, 51626515), (11538, 51626523), (11538, 51626526), (11538, 51626532),
+              (11539, 52114127), (11539, 52114129), (11539, 52114139), (11539, 52114144), (11539, 52114148))
 
 
 # database API
@@ -52,13 +60,15 @@ def broadcast_message(body):
 
 
 def make_question_message(q):
+    text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
+    text += q['question']
     message = {'messages': [
         {
             'type': 'template',
-            'altText': f"{q['part']} chap{q['chapter']} num{q['number']}",
+            'altText': text,
             'template': {
                 'type': 'confirm',
-                'text': q['question'],
+                'text': text,
                 'actions': [
                     {
                         'type': 'postback',
@@ -77,15 +87,34 @@ def make_question_message(q):
     return message
 
 
+def make_answer_message(qid, ans, token):
+    q = get_description(qid)
+    judge = ans == str(q['answer'])
+    stk = OK_STICKER if judge else NG_STICKER
+    text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
+    text += "正解です！" if judge else "不正解！"
+    text += f"【解説】\n{q['description']}"
+    message = {'message': [
+        {
+            'type': 'sticker',
+            'packageId': stk[0],
+            'stickerId': stk[1]
+        },
+        {
+            'type': 'text',
+            'text': ""
+        }
+    ], 'replyToken': token}
+    return message
+
+
 # callback
 def check_answer(postback):
     token = postback['replyToken']
     data = postback['postback']['data']
     qid, ans = [p.split('=')[1] for p in data.split('&')]
-    record = get_description(qid)
-    text = "正解です！\n" if ans == str(record['answer']) else "不正解です！\n"
-    text += f"【解説】\n{record['description']}"
-    res = reply_text(text, token)
+    a_message = make_answer_message(qid, ans, token)
+    res = reply_message(a_message)
     if res.status_code == 200:
         return 'OK'
     else:
