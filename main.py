@@ -88,10 +88,9 @@ def make_question_message(q):
 
 def make_answer_message(qid, ans, token):
     q = get_description(qid)
-    judge = ans == str(q['answer'])
-    stk = random.choice(OK_STICKER if judge else NG_STICKER)
+    stk = random.choice(OK_STICKER if ans == q['answer'] else NG_STICKER)
     text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
-    text += f"正解{'○' if judge else '×'}はです。\n"
+    text += f"正解{'○' if q['answer'] else '×'}はです。\n"
     text += f"【解説】\n{q['description']}"
     message = {'messages': [
         {
