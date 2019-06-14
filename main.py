@@ -87,8 +87,8 @@ def broadcast_message(body):
     return requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
 
-def make_question_message(q):
-    hour = datetime.now().hour
+def make_question_message(q, on_time=True):
+    hour = datetime.now().hour if on_time else 'immediate'
     text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
     text += q['question']
     message = {'messages': [
@@ -142,7 +142,7 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if is_answered(user_id, hour) is None:
+    if hour != 'immediate' or is_answered(user_id, hour) is None:
         res = reply_text("この問題にはすでに解答済みです。", token)
     else:
         reply_text("あなたの解答：" + "○" if eval(ans) else "×", token)
