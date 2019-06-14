@@ -214,7 +214,7 @@ def list_preregistered():
 
 @route('/line-callback', method='POST')
 def line_callback():
-    if os.environ.get('MENTAINANCE', False)
+    # if os.environ.get('MENTAINANCE', False)
     debug = os.environ.get('DEBUG', False)
     event_list = request.json['events']
     ret = []
