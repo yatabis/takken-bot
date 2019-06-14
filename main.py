@@ -11,6 +11,7 @@ import requests
 # CONST
 DSN = os.environ.get('DATABASE_URL')
 CAT = os.environ.get('CHANNEL_ACCESS_TOKEN')
+PUSH_EP = "https://api.line.me/v2/bot/message/push"
 REPLY_EP = "https://api.line.me/v2/bot/message/reply"
 BROADCAST_EP = "https://api.line.me/v2/bot/message/broadcast"
 DEFAULT_HEADER = {'Content-type': 'application/json', 'Authorization': f"Bearer {CAT}"}
@@ -73,6 +74,10 @@ def set_judge(user, hour, judge):
 
 
 # LINE API
+def push_message(body):
+    return requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
+
+
 def reply_message(body):
     return requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
@@ -133,7 +138,7 @@ def make_answer_message(qid, ans, token):
             'type': 'text',
             'text': text
         }
-    ], 'replyToken': token}
+    ]}
     return message, judge
 
 
@@ -147,7 +152,7 @@ def check_answer(postback):
     else:
         reply_text("あなたの解答：" + ("○" if eval(ans) else "×"), token)
         a_message, judge = make_answer_message(qid, ans, token)
-        res = reply_message(a_message)
+        res = push_message(a_message)
         set_judge(user_id, hour, judge)
     if res.status_code == 200:
         return 'OK'
