@@ -30,7 +30,7 @@ def open_pg():
 def get_question():
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from questions')
+            cur.execute('select * from questions where cached = 0')
             questions = cur.fetchall()
     return dict(random.choice(questions))
 
@@ -41,6 +41,19 @@ def get_description(qid):
             cur.execute('select * from questions where id = %s', (qid,))
             record = cur.fetchone()
     return dict(record)
+
+
+def cached_decrement():
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('update questions set cached = cached - 1 where cached != 0')
+
+
+def set_latest(qid):
+    cache_sise = os.environ.get('CACHE_SIZE', 10)
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('update questions set cached = %s where id = %s', (cache_sise, qid))
 
 
 # LINE API
@@ -159,6 +172,8 @@ def question():
     q_message = make_question_message(q)
     res = broadcast_message(q_message)
     if res.status_code == 200:
+        cached_decrement()
+        set_latest(q['id'])
         return 'OK'
     else:
         return res.text
