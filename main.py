@@ -73,6 +73,16 @@ def set_judge(user, hour, judge):
             cur.execute('update users set "%s" = %s where id = %s', (int(hour), judge, user))
 
 
+def reset_judge():
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(
+                'update users set '
+                '("7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23") = '
+                '(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)'
+            )
+
+
 # LINE API
 def push_message(body):
     return requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
@@ -224,6 +234,11 @@ def list_preregistered():
 @route('/line-callback', method='POST')
 def line_callback():
     # if os.environ.get('MENTAINANCE', False)
+    hour = datetime.now().hour
+    if hour == 0:
+        reset_judge()
+    if not 7 <= hour <= 23:
+        return 'night'
     debug = os.environ.get('DEBUG', False)
     event_list = request.json['events']
     ret = []
