@@ -1,4 +1,5 @@
 from bottle import route, request, run, template, abort
+from datetime import datetime
 import json
 import os
 from pprint import pformat, pprint
@@ -56,6 +57,21 @@ def set_latest(qid):
             cur.execute('update questions set cached = %s where id = %s', (cache_sise, qid))
 
 
+def is_answered(user, hour):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from users where id = %s', (user, ))
+            # cur.execute('select %s from users where id = %s', (str(hour), user))
+            result = cur.fetchone()
+    return dict(result)[str(hour)]
+
+
+def set_judge(user, hour, judge):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('update users set "%s" = %s where id = %s', (hour, judge, user))
+
+
 # LINE API
 def reply_message(body):
     return requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
@@ -72,6 +88,7 @@ def broadcast_message(body):
 
 
 def make_question_message(q):
+    hour = datetime.now().hour
     text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
     text += q['question']
     message = {'messages': [
@@ -85,12 +102,12 @@ def make_question_message(q):
                     {
                         'type': 'postback',
                         'label': "○",
-                        'data': f"qid={q['id']}&answer=True",
+                        'data': f"qid={q['id']}&hour={hour}&answer=True",
                     },
                     {
                         'type': 'postback',
                         'label': "×",
-                        'data': f"qid={q['id']}&answer=False",
+                        'data': f"qid={q['id']}&hour={hour}&answer=False",
                     }
                 ]
             }
@@ -101,9 +118,10 @@ def make_question_message(q):
 
 def make_answer_message(qid, ans, token):
     q = get_description(qid)
-    stk = random.choice(OK_STICKER if ans == str(q['answer']) else NG_STICKER)
-    text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
-    text += f"正解{'○' if q['answer'] else '×'}はです。\n"
+    judge = ans == str(q['answer'])
+    stk = random.choice(OK_STICKER if judge else NG_STICKER)
+    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}\n"
+    text += f"正解は{'○' if q['answer'] else '×'}です。\n"
     text += f"【解説】\n{q['description']}"
     message = {'messages': [
         {
@@ -116,16 +134,21 @@ def make_answer_message(qid, ans, token):
             'text': text
         }
     ], 'replyToken': token}
-    return message
+    return message, judge
 
 
 # callback
 def check_answer(postback):
+    user_id = postback['source']['userId']
     token = postback['replyToken']
-    data = postback['postback']['data']
-    qid, ans = [p.split('=')[1] for p in data.split('&')]
-    a_message = make_answer_message(qid, ans, token)
-    res = reply_message(a_message)
+    qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
+    if is_answered(user_id, hour) is None:
+        res = reply_text("この問題にはすでに解答済みです。", token)
+    else:
+        reply_text("あなたの解答：" + "○" if eval(ans) else "×", token)
+        a_message, judge = make_answer_message(qid, ans, token)
+        res = reply_message(a_message)
+        set_judge(user_id, hour, judge)
     if res.status_code == 200:
         return 'OK'
     else:
