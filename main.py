@@ -198,7 +198,7 @@ def pre_registration(token):
 
 def reply_question(token):
     q = get_question()
-    q_message = make_question_message(q)
+    q_message = make_question_message(q, on_time=False)
     q_message['replyToken'] = token
     res = reply_message(q_message)
     if res.status_code == 200:
