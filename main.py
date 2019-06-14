@@ -69,7 +69,7 @@ def is_answered(user, hour):
 def set_judge(user, hour, judge):
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('update users set "%s" = %s where id = %s', (hour, judge, user))
+            cur.execute('update users set "%s" = %s where id = %s', (int(hour), judge, user))
 
 
 # LINE API
@@ -145,7 +145,7 @@ def check_answer(postback):
     if not (hour == 'immediate' or is_answered(user_id, hour) is None):
         res = reply_text("この問題にはすでに解答済みです。", token)
     else:
-        reply_text("あなたの解答：" + "○" if eval(ans) else "×", token)
+        reply_text("あなたの解答：" + ("○" if eval(ans) else "×"), token)
         a_message, judge = make_answer_message(qid, ans, token)
         res = reply_message(a_message)
         set_judge(user_id, hour, judge)
@@ -214,6 +214,7 @@ def list_preregistered():
 
 @route('/line-callback', method='POST')
 def line_callback():
+    if os.environ.get('MENTAINANCE', False)
     debug = os.environ.get('DEBUG', False)
     event_list = request.json['events']
     ret = []
