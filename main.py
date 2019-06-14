@@ -94,7 +94,7 @@ def broadcast_message(body):
 
 def make_question_message(q, on_time=True):
     hour = datetime.now().hour if on_time else 'immediate'
-    text = f"{q['part']} 第{q['chapter']}章 {q['number']}\n"
+    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
     text += q['question']
     message = {'messages': [
         {
@@ -125,9 +125,9 @@ def make_answer_message(qid, ans, uid):
     q = get_description(qid)
     judge = ans == str(q['answer'])
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
-    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}\n"
+    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
     text += f"正解は{'○' if q['answer'] else '×'}です。\n"
-    text += f"【解説】\n{q['description']}"
+    text += f"{q['description']}"
     message = {'messages': [
         {
             'type': 'sticker',
@@ -148,7 +148,11 @@ def check_answer(postback):
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
     if not (hour == 'immediate' or is_answered(user_id, hour) is None):
-        res = reply_text("この問題にはすでに解答済みです。", token)
+        q = get_description(qid)
+        text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
+        text += f"正解は{'○' if q['answer'] else '×'}です。\n"
+        text += f"{q['description']}"
+        res = reply_text(text, token)
     else:
         reply_text("あなたの解答：" + ("○" if eval(ans) else "×"), token)
         a_message, judge = make_answer_message(qid, ans, user_id)
