@@ -142,7 +142,7 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if hour != 'immediate' or is_answered(user_id, hour) is None:
+    if not (hour == 'immediate' or is_answered(user_id, hour) is None):
         res = reply_text("この問題にはすでに解答済みです。", token)
     else:
         reply_text("あなたの解答：" + "○" if eval(ans) else "×", token)
