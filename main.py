@@ -168,37 +168,20 @@ def broadcast_message(body):
 
 
 def make_question_message(q, on_time=True):
+    with open("question_message.json") as j:
+        message = json.load(j)
     hour = datetime.now().hour if on_time else 'immediate'
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
-    text = f"【{part}】\n第{q['chapter']}章 『{chapter}』\n"
+    message['header']['contents'][0]['text'] = part
+    message['header']['contents'][1]['text'] = f"第{q['chapter']}章 『{chapter}』"
     if section:
-        text += f"{q['section']}. {section}\n"
-    text += f"(問{q['number']}-{q['variation']}) "
-    if statement:
-        text += statement
-    text += q['question']
-    message = {'messages': [
-        {
-            'type': 'template',
-            'altText': text,
-            'template': {
-                'type': 'confirm',
-                'text': text,
-                'actions': [
-                    {
-                        'type': 'postback',
-                        'label': "○",
-                        'data': f"qid={q['id']}&hour={hour}&answer=True",
-                    },
-                    {
-                        'type': 'postback',
-                        'label': "×",
-                        'data': f"qid={q['id']}&hour={hour}&answer=False",
-                    }
-                ]
-            }
-        }
-    ]}
+        message['header']['contents'][2]['text'] = f"{q['section']}. {section}"
+    else:
+        message['header']['contents'] = message['header']['contents'][:2]
+    message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
+    message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
+    message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
+    message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
     return message
 
 
