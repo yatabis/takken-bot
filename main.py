@@ -169,7 +169,7 @@ def broadcast_message(body):
 def make_question_message(q, on_time=True):
     hour = datetime.now().hour if on_time else 'immediate'
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
-    text = f"{part}\n第{q['chapter']}章 {chapter}\n"
+    text = f"【{part}】\n第{q['chapter']}章 『{chapter}』\n"
     if section:
         text += f"{q['section']}. {section}\n"
     text += f"問{q['number']}-{q['variation']}\n"
