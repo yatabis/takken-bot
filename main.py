@@ -182,7 +182,7 @@ def make_question_message(q, on_time=True):
     message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
     message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
     message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
-    return message
+    return {'messages': {'type': 'flex', 'altText': q['question'], 'contents': message}}
 
 
 def make_answer_message(qid, ans, uid):
