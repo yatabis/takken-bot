@@ -1,0 +1,73 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "{part_name}",
+        "size": "lg",
+        "wrap": true,
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "第{chapter}章 『{chapter_name}』",
+        "wrap": true
+      },
+      {
+        "type": "text",
+        "text": "{section}. {section_name}",
+        "wrap": true
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "問{number}-{variation}"
+      },
+      {
+        "type": "text",
+        "text": "{question}",
+        "wrap": true
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "horizontal",
+    "spacing": "sm",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "○",
+          "data": "qid={qid}&hour={hour}&answer=True"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "sm",
+        "action": {
+          "type": "postback",
+          "label": "×",
+          "data": "qid={qid}&hour={hour}&answer=False"
+        }
+      },
+      {
+        "type": "spacer",
+        "size": "sm"
+      }
+    ],
+    "flex": 0
+  }
+}
