@@ -207,7 +207,7 @@ def make_answer_message(qid, ans, uid):
     judge = ans == str(q['answer'])
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
-    text = f"{part}\n第{q['chapter']}章 {chapter}\n"
+    text = f"【{part}】\n第{q['chapter']}章 『{chapter}』\n"
     if section:
         text += f"{q['section']}. {section}\n"
     text += f"問{q['number']}-{q['variation']}\n"
