@@ -173,9 +173,9 @@ def make_question_message(q, on_time=True):
     text = f"【{part}】\n第{q['chapter']}章 『{chapter}』\n"
     if section:
         text += f"{q['section']}. {section}\n"
-    text += f"問{q['number']}-{q['variation']}\n"
+    text += f"(問{q['number']}-{q['variation']}) "
     if statement:
-        text += statement + '\n'
+        text += statement
     text += q['question']
     message = {'messages': [
         {
