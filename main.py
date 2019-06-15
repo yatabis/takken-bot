@@ -83,6 +83,60 @@ def reset_judge():
             )
 
 
+def daily_report():
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from users')
+            all_scores = cur.fetchall()
+    for score in all_scores:
+        text = f"お疲れ様でした。\n本日の{score['name']}さんのスコアです。\n"
+        report = []
+        t, f, n, judge = 0, 0, 0, ""
+        for h in range(7, 23 + 1):
+            s = score[str(h)]
+            if s is True:
+                judge = "○"
+                t += 1
+            elif s is False:
+                judge = "×"
+                f += 1
+            elif s is None:
+                judge = "-"
+                n += 1
+            report.append(f"{h:>2}時：{judge}")
+        text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
+        if n > 8:
+            text += "継続は力なり、毎日コツコツ問題を解きましょう。"
+        elif t >= 17:
+            text += "その調子です！頑張っていきましょう。"
+        else:
+            text += "しっかりと復習をして定着させていきましょう。"
+        push_message(make_report_message(text, '\n'.join(report), score['id']))
+
+
+def record_scores():
+    today = datetime.today()
+    year = today.year
+    month = today.month
+    day = today.day - 1
+    print(year, month, day)
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from users')
+            all_scores = cur.fetchall()
+            for score in all_scores:
+                print(score['name'])
+                uid = score['id']
+                values = list(score.values())
+                t = values.count(True)
+                f = values.count(False)
+                n = values.count(None)
+                cur.execute('insert into scores '
+                            '(line_id, y, m, d, t, f, n) values '
+                            '(%s, %s, %s, %s, %s, %s, %s)',
+                            (uid, year, month, day, t, f, n))
+
+
 # LINE API
 def push_message(body):
     return requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
@@ -215,43 +269,13 @@ def reply_question(token):
         return res.text
 
 
-def daily_report():
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from users')
-            all_scores = cur.fetchall()
-    for score in all_scores:
-        text = f"お疲れ様でした。\n本日の{score['name']}さんのスコアです。\n"
-        report = []
-        t, f, n, judge = 0, 0, 0, ""
-        for h in range(7, 23 + 1):
-            s = score[str(h)]
-            if s is True:
-                judge = "○"
-                t += 1
-            elif s is False:
-                judge = "×"
-                f += 1
-            elif s is None:
-                judge = "-"
-                n += 1
-            report.append(f"{h:>2}時：{judge}")
-        text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
-        if n > 8:
-            text += "継続は力なり、毎日コツコツ問題を解きましょう。"
-        elif t >= 17:
-            text += "その調子です！頑張っていきましょう。"
-        else:
-            text += "しっかりと復習をして定着させていきましょう。"
-        push_message(make_report_message(text, '\n'.join(report), score['id']))
-
-
 # routing
 @route('/question', method='POST')
 def question():
     hour = datetime.now().hour
     if hour == 0:
         daily_report()
+        record_scores()
     if hour == 0 or hour == 7:
         reset_judge()
     if not 7 <= hour <= 23:
