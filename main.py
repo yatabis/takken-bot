@@ -78,9 +78,10 @@ def get_name(part=1, chapter=1, section=1):
 
 
 def set_judge(user, hour, judge):
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('update users set "%s" = %s where id = %s', (int(hour), judge, user))
+    if hour != 'immediate':
+        with open_pg() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute('update users set "%s" = %s where id = %s', (int(hour), judge, user))
 
 
 def reset_judge():
