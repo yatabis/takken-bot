@@ -68,6 +68,15 @@ def is_answered(user, hour):
     return dict(result)[str(hour)]
 
 
+def get_name(part=1, chapter=1, section=1):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from header_name where part = %s and chapter = %s and section = %s',
+                        (int(part), int(chapter), int(section)))
+            result = cur.fetchone()
+    return result['part_name'], result['chapter_name'], result['section_name'], result['statement']
+
+
 def set_judge(user, hour, judge):
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -159,7 +168,13 @@ def broadcast_message(body):
 
 def make_question_message(q, on_time=True):
     hour = datetime.now().hour if on_time else 'immediate'
-    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
+    part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
+    text = f"{part}\n第{q['chapter']}章 {chapter}\n"
+    if section:
+        text += f"{q['section']}. {section}\n"
+    text += f"問{q['number']}-{q['variation']}\n"
+    if statement:
+        text += statement + '\n'
     text += q['question']
     message = {'messages': [
         {
@@ -190,7 +205,10 @@ def make_answer_message(qid, ans, uid):
     q = get_description(qid)
     judge = ans == str(q['answer'])
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
-    text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
+    text = f"{part}\n第{q['chapter']}章 {chapter}\n"
+    if section:
+        text += f"{q['section']}. {section}\n"
+    text += f"問{q['number']}-{q['variation']}\n"
     text += f"正解は{'○' if q['answer'] else '×'}です。\n"
     text += f"{q['description']}"
     message = {'messages': [
