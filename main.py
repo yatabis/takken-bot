@@ -221,7 +221,6 @@ def daily_report():
             cur.execute('select * from users')
             all_scores = cur.fetchall()
     for score in all_scores:
-        uid = score['id']
         text = f"お疲れ様でした。\n本日の{score['name']}さんのスコアです。\n"
         report = []
         t, f, n, judge = 0, 0, 0, ""
@@ -244,7 +243,7 @@ def daily_report():
             text += "その調子です！頑張っていきましょう。"
         else:
             text += "しっかりと復習をして定着させていきましょう。"
-        push_message(make_report_message(text, '\n'.join(report), uid))
+        push_message(make_report_message(text, '\n'.join(report), score['id']))
 
 
 # routing
@@ -252,8 +251,7 @@ def daily_report():
 def question():
     hour = datetime.now().hour
     if hour == 0:
-        """daily_report()"""
-        pass
+        daily_report()
     if hour == 0 or hour == 7:
         reset_judge()
     if not 7 <= hour <= 23:
