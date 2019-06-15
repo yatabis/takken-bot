@@ -1,6 +1,7 @@
 from bottle import route, request, run, template, abort
 from datetime import datetime
 import json
+from operator import itemgetter
 import os
 from pprint import pformat, pprint
 import psycopg2
@@ -298,7 +299,7 @@ def list_preregistered():
     ep = f"https://asia-northeast1-sheetstowebapi.cloudfunctions.net/api?id={form_id}&range={target}"
     req = requests.get(ep)
     pre_registered = req.json()
-    registered = check_questions()
+    registered = sorted(check_questions(), key=itemgetter('part', 'chapter', 'number', 'variation'))
     return template('questions-list',
                     registered=registered,
                     pre_registered=sorted(pre_registered, key=lambda x: x['タイムスタンプ']))
