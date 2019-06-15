@@ -4,13 +4,29 @@
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <meta http-equiv='X-UA-Compatible' content='ie=edge'>
-  <title>予備登録済み問題一覧</title>
+  <title>登録済み問題一覧</title>
   <link rel='stylesheet' href='https://unpkg.com/ress/dist/ress.min.css'>
 </head>
 <body>
+<h1>現在登録されている問題一覧</h1>
+% p_latest, c_latest = "", ""
+% for q in registered:
+  % part = q.get('part')
+  % if part != p_latest:
+    <h2>{{ part }}</h2>
+    % p_latest = part
+  %end
+  % chap = q.get('chapter')
+  % if chap != c_latest:
+    <h3>第{{ chap }}章</h3>
+    % c_latest = chap
+  %end
+    <p>Q{{ q.get('number') }}. {{ q.get('question', "")[:16] }}...</p>
+% end
+
 <h1>現在予備登録されている問題一覧</h1>
 % p_latest, c_latest = "", ""
-% for q in questions:
+% for q in pre_registered:
   % if q.get('パートを選択') != p_latest:
     <h2>{{ q.get('パートを選択') }}</h2>
     % p_latest = q.get('パートを選択')

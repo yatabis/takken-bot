@@ -273,8 +273,11 @@ def list_preregistered():
     target = "%27%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%81%AE%E5%9B%9E%E7%AD%94%201%27!A1:E1000"
     ep = f"https://asia-northeast1-sheetstowebapi.cloudfunctions.net/api?id={form_id}&range={target}"
     req = requests.get(ep)
-    questions = req.json()
-    return template('questions-list', questions=sorted(questions, key=lambda x: x['タイムスタンプ']))
+    pre_registered = req.json()
+    registered = check_questions()
+    return template('questions-list',
+                    registered=registered,
+                    pre_registered=sorted(pre_registered, key=lambda x: x['タイムスタンプ']))
 
 
 @route('/line-callback', method='POST')
@@ -306,21 +309,13 @@ def line_callback():
 
 
 # debug
-@route('/db/check/<table>', method='GET')
-def check_db(table='all'):
-    debug = os.environ.get('DEBUG', False)
-    if debug:
-        with open_pg() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cur:
-                if table == 'all':
-                    cur.execute('select relname from pg_class where relkind = r')
-                    result = cur.fetchall()
-                else:
-                    cur.execute('select * from %s', (table,))
-                    result = cur.fetchall()
-        return pformat(dict(result))
-    else:
-        return abort(404)
+@route('/db/check/questions', method='GET')
+def check_questions():
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select * from questions')
+            result = cur.fetchall()
+    return [dict(r) for r in result]
 
 
 if __name__ == '__main__':
