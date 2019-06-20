@@ -23,6 +23,8 @@ NG_STICKER = ((11537, 52002744), (11537, 52002749), (11537, 52002753), (11537, 5
               (11537, 52002766), (11537, 52002769), (11537, 52002778), (11537, 52002779), (11538, 51626504),
               (11538, 51626506), (11538, 51626511), (11538, 51626515), (11538, 51626523), (11538, 51626526),
               (11539, 52114127), (11539, 52114129), (11539, 52114139), (11539, 52114144), (11539, 52114148))
+QUESTION_TIMES = (('first', 8), ('second', 10), ('third', 12), ('fourth', 14),
+                  ('fifth', 16), ('sixth', 18), ('seventh', 20), ('ninth', 22))
 
 
 # database API
@@ -60,12 +62,14 @@ def set_latest(qid):
 
 
 def is_answered(user, hour):
+    today = datetime.today()
+    y, m, d = today.year, today.month, today.day
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from users where id = %s', (user, ))
-            # cur.execute('select %s from users where id = %s', (str(hour), user))
+            cur.execute('select * from scores where user_id = %s and year = %s and month = %s and day = %s',
+                        (user, y, m, d))
             result = cur.fetchone()
-    return dict(result)[str(hour)]
+    return result[hour]
 
 
 def get_name(part=1, chapter=1, section=1):
@@ -78,10 +82,15 @@ def get_name(part=1, chapter=1, section=1):
 
 
 def set_judge(user, hour, judge):
-    if hour != 'immediate':
-        with open_pg() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute('update users set "%s" = %s where id = %s', (int(hour), judge, user))
+    today = datetime.today()
+    y, m, d = today.year, today.month, today.day
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            if hour == "first":
+                cur.execute('insert into scores (user_id, year, month, day, first) values (%s, %s, %s, %s, %s)',
+                            (user, y, m, d, judge))
+            else:
+                cur.execute(f'update scores set {hour} = %s', (judge,))
 
 
 def reset_judge():
@@ -158,8 +167,7 @@ def reply_message(body):
 
 
 def reply_text(text, token):
-    body = {'messages': [{'type': 'text', 'text': text}],
-            'replyToken': token}
+    body = {'messages': [{'type': 'text', 'text': text}], 'replyToken': token}
     return reply_message(body)
 
 
@@ -167,10 +175,9 @@ def broadcast_message(body):
     return requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
 
-def make_question_message(q, on_time=True):
+def make_question_message(q, hour=None):
     with open("question_message.json") as j:
         message = json.load(j)
-    hour = datetime.now().hour if on_time else 'immediate'
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
     message['header']['contents'][0]['text'] = part
     message['header']['contents'][1]['text'] = f"第{q['chapter']}章 『{chapter}』"
@@ -223,7 +230,7 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if not (hour == 'immediate' or is_answered(user_id, hour) is None):
+    if not (hour == 'None' or is_answered(user_id, hour) is None):
         q = get_description(qid)
         text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
         text += f"正解は{'○' if q['answer'] else '×'}です。\n"
@@ -263,7 +270,7 @@ def pre_registration(token):
 
 def reply_question(token):
     q = get_question()
-    q_message = make_question_message(q, on_time=False)
+    q_message = make_question_message(q)
     q_message['replyToken'] = token
     res = reply_message(q_message)
     if res.status_code == 200:
@@ -276,15 +283,10 @@ def reply_question(token):
 @route('/question', method='POST')
 def question():
     hour = datetime.now().hour
-    if hour == 0:
-        daily_report()
-        record_scores()
-    if hour == 0 or hour == 7:
-        reset_judge()
-    if not 7 <= hour <= 23:
+    if hour not in [t[1] for t in QUESTION_TIMES]:
         return 'night'
     q = get_question()
-    q_message = make_question_message(q)
+    q_message = make_question_message(q, QUESTION_TIMES[[t[1]for t in QUESTION_TIMES].index(hour)][0])
     res = broadcast_message(q_message)
     if res.status_code == 200:
         cached_decrement()
@@ -323,6 +325,8 @@ def line_callback():
         elif event_type == 'message' and event['message']['type'] == 'text':
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
+            elif "成績" in event['message']['text']:
+                pass
             elif event['message']['text'] == "登録":
                 ret.append(reply_text(os.environ.get('FORM_URI'), reply_token))
             elif event['message']['text'] == "確認":
