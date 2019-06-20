@@ -185,7 +185,7 @@ def make_question_message(q, on_time=True):
     return {'messages': [{'type': 'flex', 'altText': q['question'], 'contents': message}]}
 
 
-def make_answer_message(qid, ans, uid):
+def make_answer_message(qid, ans, token):
     q = get_description(qid)
     judge = ans == str(q['answer'])
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
@@ -206,7 +206,7 @@ def make_answer_message(qid, ans, uid):
             'type': 'text',
             'text': text
         }
-    ], 'to': uid}
+    ], 'replyToken': token}
     return message, judge
 
 
@@ -230,9 +230,8 @@ def check_answer(postback):
         text += f"{q['description']}"
         res = reply_text(text, token)
     else:
-        reply_text("あなたの解答：" + ("○" if eval(ans) else "×"), token)
-        a_message, judge = make_answer_message(qid, ans, user_id)
-        res = push_message(a_message)
+        a_message, judge = make_answer_message(qid, ans, token)
+        res = reply_message(a_message)
         set_judge(user_id, hour, judge)
     if res.status_code == 200:
         return 'OK'
