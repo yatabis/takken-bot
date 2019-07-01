@@ -103,43 +103,34 @@ def reset_judge():
             )
 
 
-def daily_report():
+def daily_report(user):
+    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 7 else 1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from users')
-            all_scores = cur.fetchall()
-    for score in all_scores:
-        text = f"お疲れ様でした。\n本日の{score['name']}さんのスコアです。\n"
-        report = []
-        t, f, n, judge = 0, 0, 0, ""
-        for h in range(7, 23 + 1):
-            s = score[str(h)]
-            if s is True:
-                judge = "○"
-                t += 1
-            elif s is False:
-                judge = "×"
-                f += 1
-            elif s is None:
-                judge = "-"
-                n += 1
-            report.append(f"{h:>2}時：{judge}")
-        text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
-        if n > 8:
-            text += "継続は力なり、毎日コツコツ問題を解きましょう。"
-        elif t >= 17:
-            text += "その調子です！頑張っていきましょう。"
-        else:
-            text += "しっかりと復習をして定着させていきましょう。"
-        push_message(make_report_message(text, '\n'.join(report), score['id']))
+            cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
+                        'from scores '
+                        'where year = %s and month = %s and day = %s and user_id = %s',
+                        (theday.year, theday.month, theday.day, user))
+            score = cur.fetchall()
+            cur.execute('select name from users where id = %s', (user,))
+            name = cur.fetchone()[0]
+    text = f"お疲れ様でした。\n本日の{name}さんのスコアです。\n"
+    t, f, n = [score.count(j) for j in [True, False, None]]
+    text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
+    if n > 8:
+        text += "継続は力なり、毎日コツコツ問題を解きましょう。"
+    elif t >= 17:
+        text += "その調子です！頑張っていきましょう。"
+    else:
+        text += "しっかりと復習をして定着させていきましょう。"
+    return text
 
 
 def record_scores():
     today = datetime.today()
     year = today.year
     month = today.month
-    day = today.day - 1
-    print(year, month, day)
+    day = today.day
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select * from users')
@@ -232,6 +223,9 @@ def check_answer(postback):
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
     if hour == 'None' or is_answered(user_id, hour) is None:
         a_message, judge = make_answer_message(qid, ans, token)
+        if hour == 'eighth':
+            report = daily_report(user_id)
+            a_message['messages'].append({'type': 'text', 'text': report})
         res = reply_message(a_message)
         set_judge(user_id, hour, judge)
     else:
