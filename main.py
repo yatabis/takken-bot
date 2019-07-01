@@ -90,7 +90,7 @@ def set_judge(user, hour, judge):
                 cur.execute('insert into scores (user_id, year, month, day, first) values (%s, %s, %s, %s, %s)',
                             (user, y, m, d, judge))
             else:
-                cur.execute(f'update scores set {hour} = %s', (judge,))
+                cur.execute(f'update scores set {hour} = %s where user_id = %s', (judge, user))
 
 
 def reset_judge():
@@ -230,16 +230,16 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if not (hour == 'None' or is_answered(user_id, hour) is None):
+    if hour == 'None' or is_answered(user_id, hour) is None:
+        a_message, judge = make_answer_message(qid, ans, token)
+        res = reply_message(a_message)
+        set_judge(user_id, hour, judge)
+    else:
         q = get_description(qid)
         text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
         text += f"正解は{'○' if q['answer'] else '×'}です。\n"
         text += f"{q['description']}"
         res = reply_text(text, token)
-    else:
-        a_message, judge = make_answer_message(qid, ans, token)
-        res = reply_message(a_message)
-        set_judge(user_id, hour, judge)
     if res.status_code == 200:
         return 'OK'
     else:
@@ -284,9 +284,9 @@ def reply_question(token):
 def question():
     hour = datetime.now().hour
     if hour not in [t[1] for t in QUESTION_TIMES]:
-        return 'night'
+        return 'This is not question time.'
     q = get_question()
-    q_message = make_question_message(q, QUESTION_TIMES[[t[1]for t in QUESTION_TIMES].index(hour)][0])
+    q_message = make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0])
     res = broadcast_message(q_message)
     if res.status_code == 200:
         cached_decrement()
@@ -346,7 +346,7 @@ def check_questions():
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select * from questions')
             result = cur.fetchall()
-    return [dict(r) for r in result]
+    return json.dumps([dict(r) for r in result], ensure_ascii=False).encode('utf-8')
 
 
 if __name__ == '__main__':
