@@ -69,7 +69,7 @@ def is_answered(user, hour):
             cur.execute('select * from scores where user_id = %s and year = %s and month = %s and day = %s',
                         (user, y, m, d))
             result = cur.fetchone()
-    return result[hour]
+    return result[hour] if result is not None else None
 
 
 def get_name(part=1, chapter=1, section=1):
