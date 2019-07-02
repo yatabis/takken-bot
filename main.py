@@ -111,15 +111,15 @@ def daily_report(user):
                         'from scores '
                         'where year = %s and month = %s and day = %s and user_id = %s',
                         (theday.year, theday.month, theday.day, user))
-            score = cur.fetchall()
+            score = cur.fetchone()
             cur.execute('select name from users where id = %s', (user,))
             name = cur.fetchone()[0]
     text = f"お疲れ様でした。\n本日の{name}さんのスコアです。\n"
     t, f, n = [score.count(j) for j in [True, False, None]]
     text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
-    if n > 8:
+    if n > 6:
         text += "継続は力なり、毎日コツコツ問題を解きましょう。"
-    elif t >= 17:
+    elif t >= 6:
         text += "その調子です！頑張っていきましょう。"
     else:
         text += "しっかりと復習をして定着させていきましょう。"
