@@ -223,11 +223,11 @@ def check_answer(postback):
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
     if hour == 'None' or is_answered(user_id, hour) is None:
         a_message, judge = make_answer_message(qid, ans, token)
+        set_judge(user_id, hour, judge)
         if hour == 'eighth':
             report = daily_report(user_id)
             a_message['messages'].append({'type': 'text', 'text': report})
         res = reply_message(a_message)
-        set_judge(user_id, hour, judge)
     else:
         q = get_description(qid)
         text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
