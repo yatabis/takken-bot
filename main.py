@@ -104,7 +104,10 @@ def reset_judge():
 
 
 def daily_report(user):
-    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 7 else -1)
+    hour = datetime.today().hour
+    if hour > 7:
+        return None
+    theday = datetime.today() + timedelta(days=0 if datetime.today().hour >= 0 else -1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
@@ -229,7 +232,8 @@ def check_answer(postback):
         set_judge(user_id, hour, judge)
         if hour == 'eighth':
             report = daily_report(user_id)
-            a_message['messages'].append({'type': 'text', 'text': report})
+            if report:
+                a_message['messages'].append({'type': 'text', 'text': report})
         res = reply_message(a_message)
     else:
         q = get_description(qid)
