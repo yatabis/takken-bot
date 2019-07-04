@@ -104,7 +104,7 @@ def reset_judge():
 
 
 def daily_report(user):
-    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 6 else 1)
+    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 7 else -1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
