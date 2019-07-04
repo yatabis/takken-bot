@@ -104,7 +104,7 @@ def reset_judge():
 
 
 def daily_report(user):
-    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 7 else 1)
+    theday = datetime.today() + timedelta(days=0 if datetime.today().hour > 6 else 1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
@@ -178,6 +178,9 @@ def make_question_message(q, hour=None):
         message['header']['contents'] = message['header']['contents'][:2]
     message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
     message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
+    if hour == 'eighth':
+        message['body']['contents'][1]['text'] += "\n\nこの問題に解答すると本日のスコアを集計します。" \
+                                                  "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。"
     message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
     message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
     return {'messages': [{'type': 'flex', 'altText': q['question'], 'contents': message}]}
