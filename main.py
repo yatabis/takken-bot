@@ -82,13 +82,12 @@ def get_name(part=1, chapter=1, section=1):
 
 
 def set_judge(user, hour, judge):
-    today = datetime.today()
-    y, m, d = today.year, today.month, today.day
+    theday = datetime.today() + timedelta(days=0 if datetime.today().hour >= 0 else -1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             if hour == "first":
                 cur.execute('insert into scores (user_id, year, month, day, first) values (%s, %s, %s, %s, %s)',
-                            (user, y, m, d, judge))
+                            (user, theday.year, theday.month, theday.day, judge))
             else:
                 cur.execute(f'update scores set {hour} = %s where user_id = %s', (judge, user))
 
@@ -107,7 +106,7 @@ def daily_report(user):
     hour = datetime.today().hour
     if 7 < hour < 22:
         return None
-    theday = datetime.today() + timedelta(days=0 if datetime.today().hour >= 0 else -1)
+    theday = datetime.today() + timedelta(days=0 if hour >= 0 else -1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
