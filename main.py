@@ -228,7 +228,8 @@ def check_answer(postback):
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
     if hour == 'instant' or is_answered(user_id, hour) is None:
         a_message, judge = make_answer_message(qid, ans, token)
-        set_judge(user_id, hour, judge)
+        if hour != 'instant':
+            set_judge(user_id, hour, judge)
         if hour == 'eighth':
             report = daily_report(user_id)
             if report:
