@@ -168,7 +168,7 @@ def broadcast_message(body):
     return requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
 
-def make_question_message(q, hour=None):
+def make_question_message(q, hour='instant'):
     with open("question_message.json") as j:
         message = json.load(j)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
@@ -226,7 +226,7 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if hour == 'None' or is_answered(user_id, hour) is None:
+    if hour == 'instant' or is_answered(user_id, hour) is None:
         a_message, judge = make_answer_message(qid, ans, token)
         set_judge(user_id, hour, judge)
         if hour == 'eighth':
