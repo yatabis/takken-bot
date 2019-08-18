@@ -34,10 +34,12 @@ def open_pg():
 
 def get_question():
     with open_pg() as conn:
+        q = None
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from questions where cached = 0')
-            questions = cur.fetchall()
-    return dict(random.choice(questions))
+            while q is None:
+                cur.execute('select * from questions where id = (select (max(id) * random())::int from questions) and cached = 0')
+                q = cur.fetchone()
+    return dict(q)
 
 
 def get_description(qid):
