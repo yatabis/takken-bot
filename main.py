@@ -32,6 +32,15 @@ def open_pg():
     return psycopg2.connect(DSN)
 
 
+def get_users():
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select id from users')
+            users = cur.fetchall()
+    return [u[0] for u in users]
+
+
+
 def get_question():
     with open_pg() as conn:
         q = None
@@ -167,7 +176,11 @@ def reply_text(text, token):
 
 
 def broadcast_message(body):
-    return requests.post(BROADCAST_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
+    res = []
+    for u in get_users():
+        body['to'] = u
+        res.append(requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER))
+    return res
 
 
 def make_question_message(q, hour='instant'):
@@ -291,12 +304,12 @@ def question():
     q = get_question()
     q_message = make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0])
     res = broadcast_message(q_message)
-    if res.status_code == 200:
+    if False not in [r.status_code == 200 for r in res]:
         cached_decrement()
         set_latest(q['id'])
         return 'OK'
     else:
-        return res.text
+        return " and ".join([r.text for r in res])
 
 
 @route('/list', method='GET')
