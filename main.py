@@ -187,14 +187,17 @@ def make_question_message(q, hour='instant'):
     with open("question_message.json") as j:
         message = json.load(j)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
+    if (q['part'], q['chapter'], q['section']) == (1, 7, 2) and q['number'] >= 9:
+        statement = ("AからBとCとが負担部分2分の1として連帯して1,000万円を借り入れる場合と、"
+                     "DからEが1,000万円を借り入れ、Fがその借入金返済債務についてEと連帯して保証する場合とに関して考える。")
     message['header']['contents'][0]['text'] = part
     message['header']['contents'][1]['text'] = f"第{q['chapter']}章 『{chapter}』"
     if section:
         message['header']['contents'][2]['text'] = f"{q['section']}. {section}"
     else:
+        message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
         message['header']['contents'] = message['header']['contents'][:2]
     message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
-    message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
     if hour == 'eighth':
         message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
                                                   "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
