@@ -195,9 +195,9 @@ def make_question_message(q, hour='instant'):
     if section:
         message['header']['contents'][2]['text'] = f"{q['section']}. {section}"
     else:
-        message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
         message['header']['contents'] = message['header']['contents'][:2]
     message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
+    message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
     if hour == 'eighth':
         message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
                                                   "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
