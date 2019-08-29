@@ -301,8 +301,9 @@ def reply_question(token):
 # routing
 @route('/question', method='POST')
 def question():
-    hour = datetime.now().hour
-    if hour not in [t[1] for t in QUESTION_TIMES]:
+    time = datetime.now()
+    hour, minute = time.hour, time.minute
+    if hour not in [t[1] for t in QUESTION_TIMES] or minute / 10 > 0:
         return 'This is not question time.'
     q = get_question()
     q_message = make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0])
