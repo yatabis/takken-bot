@@ -303,9 +303,9 @@ def reply_question(token):
 def question():
     time = datetime.now()
     hour, minute = time.hour, time.minute
-    print(hour, minute)
-    print(hour not in [t[1] for t in QUESTION_TIMES], minute / 10 > 0)
-    if hour not in [t[1] for t in QUESTION_TIMES] or minute / 10 > 0:
+    print(hour, minute, minute // 10)
+    print(hour not in [t[1] for t in QUESTION_TIMES], minute // 10 > 0)
+    if hour not in [t[1] for t in QUESTION_TIMES] or minute // 10 > 0:
         return 'This is not question time.'
     q = get_question()
     q_message = make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0])
