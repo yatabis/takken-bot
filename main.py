@@ -203,7 +203,7 @@ def make_question_message(q, hour='instant'):
                                                   "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
     message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
     message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
-    return {'messages': [{'type': 'flex', 'altText': q['question'], 'contents': message}]}
+    return {'type': 'flex', 'altText': q['question'], 'contents': message}
 
 
 def make_answer_message(qid, ans, token):
@@ -303,16 +303,16 @@ def reply_question(token):
 def question():
     time = datetime.now()
     hour, minute = time.hour, time.minute
-    print(hour, minute, minute // 10)
-    print(hour not in [t[1] for t in QUESTION_TIMES], minute // 10 > 0)
     if hour not in [t[1] for t in QUESTION_TIMES] or minute // 10 > 0:
         return 'This is not question time.'
-    q = get_question()
-    q_message = make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0])
-    res = broadcast_message(q_message)
-    if False not in [r.status_code == 200 for r in res]:
+    q_message = {"messages": []}
+    for i in range(3):
+        q = get_question()
+        q_message["messages"].append(make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0]))
         cached_decrement()
         set_latest(q['id'])
+    res = broadcast_message(q_message)
+    if False not in [r.status_code == 200 for r in res]:
         return 'OK'
     else:
         return " and ".join([r.text for r in res])
