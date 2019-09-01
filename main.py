@@ -244,21 +244,21 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    if hour == 'instant' or is_answered(user_id, hour) is None:
-        a_message, judge = make_answer_message(qid, ans, token)
-        if hour != 'instant':
-            set_judge(user_id, hour, judge)
-        if hour == 'eighth':
-            report = daily_report(user_id)
-            if report:
-                a_message['messages'].append({'type': 'text', 'text': report})
-        res = reply_message(a_message)
-    else:
-        q = get_description(qid)
-        text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
-        text += f"正解は{'○' if q['answer'] else '×'}です。\n"
-        text += f"{q['description']}"
-        res = reply_text(text, token)
+    # if hour == 'instant' or is_answered(user_id, hour) is None:
+    a_message, judge = make_answer_message(qid, ans, token)
+    # if hour != 'instant':
+    #     set_judge(user_id, hour, judge)
+    if hour == 'eighth':
+        report = daily_report(user_id)
+        if report:
+            a_message['messages'].append({'type': 'text', 'text': report})
+    res = reply_message(a_message)
+    # else:
+    #     q = get_description(qid)
+    #     text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
+    #     text += f"正解は{'○' if q['answer'] else '×'}です。\n"
+    #     text += f"{q['description']}"
+    #     res = reply_text(text, token)
     if res.status_code == 200:
         return 'OK'
     else:
