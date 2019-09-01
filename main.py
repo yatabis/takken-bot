@@ -198,9 +198,9 @@ def make_question_message(q, hour='instant'):
         message['header']['contents'] = message['header']['contents'][:2]
     message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
     message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
-    if hour == 'eighth':
-        message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
-                                                  "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
+    # if hour == 'eighth':
+    #     message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
+    #                                               "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
     message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
     message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
     return {'type': 'flex', 'altText': q['question'], 'contents': message}
@@ -248,10 +248,10 @@ def check_answer(postback):
     a_message, judge = make_answer_message(qid, ans, token)
     # if hour != 'instant':
     #     set_judge(user_id, hour, judge)
-    if hour == 'eighth':
-        report = daily_report(user_id)
-        if report:
-            a_message['messages'].append({'type': 'text', 'text': report})
+    # if hour == 'eighth':
+    #     report = daily_report(user_id)
+    #     if report:
+    #         a_message['messages'].append({'type': 'text', 'text': report})
     res = reply_message(a_message)
     # else:
     #     q = get_description(qid)
