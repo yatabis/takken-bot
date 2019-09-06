@@ -129,6 +129,26 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool):
     return is_correct
 
 
+def get_score_today(uid):
+    today = datetime.now()
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("select answered, correct "
+                        "from   scores "
+                        "where  user_id = %s"
+                        "   and year = %s"
+                        "   and month = %s"
+                        "   and day = %s",
+                        (uid, today.year, today.month, today.day))
+            score = cur.fetchone()
+    if score is None:
+        return "本日はまだ問題に解答していません。"
+    answerd = len(json.loads(score["answered"]))
+    correct = score["correct"]
+    rate = int(correct / answerd * 1000) / 10
+    return f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
+
+
 def daily_report(user):
     hour = datetime.today().hour
     if 7 < hour < 22:
@@ -338,7 +358,7 @@ def line_callback():
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
             elif "成績" in event['message']['text']:
-                pass
+                get_score_today(event["source"]["userId"])
             elif event['message']['text'] == "登録":
                 ret.append(reply_text(os.environ.get('FORM_URI'), reply_token))
             elif event['message']['text'] == "確認":
