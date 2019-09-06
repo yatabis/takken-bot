@@ -182,7 +182,7 @@ def broadcast_message(body):
     return res
 
 
-def make_question_message(q, hour='instant'):
+def make_question_message(q, timestamp):
     with open("question_message.json") as j:
         message = json.load(j)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
@@ -200,8 +200,8 @@ def make_question_message(q, hour='instant'):
     # if hour == 'eighth':
     #     message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
     #                                               "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
-    message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=True"
-    message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&hour={hour}&answer=False"
+    message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&timestamp={timestamp}&answer=True"
+    message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&timestamp={timestamp}&answer=False"
     return {'type': 'flex', 'altText': q['question'], 'contents': message}
 
 
@@ -289,7 +289,7 @@ def pre_registration(token):
 def reply_question(token):
     q = get_question()
     q_message = {
-        "messages": [make_question_message(q)],
+        "messages": [make_question_message(q, datetime.now().timestamp())],
         "replyToken": token
     }
     res = reply_message(q_message)
@@ -309,7 +309,7 @@ def question():
     q_message = {"messages": []}
     for i in range(3):
         q = get_question()
-        q_message["messages"].append(make_question_message(q, QUESTION_TIMES[[t[1] for t in QUESTION_TIMES].index(hour)][0]))
+        q_message["messages"].append(make_question_message(q, datetime.now().timestamp()))
         cached_decrement()
         set_latest(q['id'])
     res = broadcast_message(q_message)
