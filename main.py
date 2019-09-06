@@ -40,7 +40,6 @@ def get_users():
     return [u[0] for u in users]
 
 
-
 def get_question():
     with open_pg() as conn:
         q = None
@@ -289,8 +288,10 @@ def pre_registration(token):
 
 def reply_question(token):
     q = get_question()
-    q_message = make_question_message(q)
-    q_message['replyToken'] = token
+    q_message = {
+        "messages": make_question_message(q),
+        "replyToken": token
+    }
     res = reply_message(q_message)
     if res.status_code == 200:
         return 'OK'
