@@ -289,7 +289,7 @@ def pre_registration(token):
 def reply_question(token):
     q = get_question()
     q_message = {
-        "messages": make_question_message(q),
+        "messages": [make_question_message(q)],
         "replyToken": token
     }
     res = reply_message(q_message)
