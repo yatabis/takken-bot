@@ -358,7 +358,7 @@ def line_callback():
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
             elif "成績" in event['message']['text']:
-                get_score_today(event["source"]["userId"])
+                reply_text(get_score_today(event["source"]["userId"]), reply_token)
             elif event['message']['text'] == "登録":
                 ret.append(reply_text(os.environ.get('FORM_URI'), reply_token))
             elif event['message']['text'] == "確認":
