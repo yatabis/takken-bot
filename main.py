@@ -91,25 +91,42 @@ def get_name(part=1, chapter=1, section=1):
     return result['part_name'], result['chapter_name'], result['section_name'], result['statement']
 
 
-def set_judge(user, hour, judge):
-    theday = datetime.today() + timedelta(days=0 if datetime.today().hour >= 0 else -1)
+def upsert_score(uid: str, qid: str, ts: float, ans: bool):
+    today = datetime.now()
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            if hour == "first":
-                cur.execute('insert into scores (user_id, year, month, day, first) values (%s, %s, %s, %s, %s)',
-                            (user, theday.year, theday.month, theday.day, judge))
+            cur.execute("select answer "
+                        "from   questions "
+                        "where  id = %s",
+                        (qid,))
+            is_correct = cur.fetchone()[0] is ans
+            cur.execute("select answered, correct "
+                        "from   scores "
+                        "where  user_id = %s"
+                        "   and year = %s"
+                        "   and month = %s"
+                        "   and day = %s",
+                        (uid, today.year, today.month, today.day))
+            score = cur.fetchone()
+            if score is None:
+                cur.execute("insert into scores "
+                            "(user_id, answered, correct) "
+                            "values (%s, %s, %s)",
+                            (uid, json.dumps([ts]), int(is_correct)))
+            elif ts in json.loads(score["answered"]):
+                return None
             else:
-                cur.execute(f'update scores set {hour} = %s where user_id = %s', (judge, user))
-
-
-def reset_judge():
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(
-                'update users set '
-                '("7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23") = '
-                '(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)'
-            )
+                tss = json.loads(score["answered"]) + [ts]
+                correct = score["correct"] + int(is_correct)
+                cur.execute("update scores set "
+                            "answered = %s,"
+                            "correct = %s "
+                            "where  user_id = %s"
+                            "   and year = %s"
+                            "   and month = %s"
+                            "   and day = %s",
+                            (json.dumps(tss), correct, uid, today.year, today.month, today.day))
+    return is_correct
 
 
 def daily_report(user):
@@ -136,28 +153,6 @@ def daily_report(user):
     else:
         text += "しっかりと復習をして定着させていきましょう。"
     return text
-
-
-def record_scores():
-    today = datetime.today()
-    year = today.year
-    month = today.month
-    day = today.day
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from users')
-            all_scores = cur.fetchall()
-            for score in all_scores:
-                print(score['name'])
-                uid = score['id']
-                values = list(score.values())
-                t = values.count(True)
-                f = values.count(False)
-                n = values.count(None)
-                cur.execute('insert into scores '
-                            '(line_id, y, m, d, t, f, n) values '
-                            '(%s, %s, %s, %s, %s, %s, %s)',
-                            (uid, year, month, day, t, f, n))
 
 
 # LINE API
@@ -205,9 +200,8 @@ def make_question_message(q, timestamp):
     return {'type': 'flex', 'altText': q['question'], 'contents': message}
 
 
-def make_answer_message(qid, ans, token):
+def make_answer_message(qid, judge, token):
     q = get_description(qid)
-    judge = ans == str(q['answer'])
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
     text = f"【{part}】\n第{q['chapter']}章 『{chapter}』\n"
@@ -227,7 +221,7 @@ def make_answer_message(qid, ans, token):
             'text': text
         }
     ], 'replyToken': token}
-    return message, judge
+    return message
 
 
 def make_report_message(text, report, uid):
@@ -242,22 +236,17 @@ def make_report_message(text, report, uid):
 def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
-    qid, hour, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    # if hour == 'instant' or is_answered(user_id, hour) is None:
-    a_message, judge = make_answer_message(qid, ans, token)
-    # if hour != 'instant':
-    #     set_judge(user_id, hour, judge)
-    # if hour == 'eighth':
-    #     report = daily_report(user_id)
-    #     if report:
-    #         a_message['messages'].append({'type': 'text', 'text': report})
-    res = reply_message(a_message)
-    # else:
-    #     q = get_description(qid)
-    #     text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
-    #     text += f"正解は{'○' if q['answer'] else '×'}です。\n"
-    #     text += f"{q['description']}"
-    #     res = reply_text(text, token)
+    qid, timestamp, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
+    is_correct = upsert_score(user_id, qid, float(timestamp), ans == "True")
+    if is_correct is None:
+        q = get_description(qid)
+        text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
+        text += f"正解は{'○' if q['answer'] else '×'}です。\n"
+        text += f"{q['description']}"
+        res = reply_text(text, token)
+    else:
+        a_message = make_answer_message(qid, is_correct, token)
+        res = reply_message(a_message)
     if res.status_code == 200:
         return 'OK'
     else:
