@@ -318,7 +318,12 @@ def line_callback():
         event_type = event['type']
         reply_token = event['replyToken']
         if event_type == 'postback':
-            ret.append(check_answer(event))
+            if event["postback"]["data"] == "question":
+                ret.append(reply_question(reply_token))
+            elif event["postback"]["data"] == "score":
+                reply_text(get_score_today(event["source"]["userId"]), reply_token)
+            else:
+                ret.append(check_answer(event))
         elif event_type == 'message' and event['message']['type'] == 'text':
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
