@@ -110,9 +110,9 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool):
             score = cur.fetchone()
             if score is None:
                 cur.execute("insert into scores "
-                            "(user_id, answered, correct) "
-                            "values (%s, %s, %s)",
-                            (uid, json.dumps([ts]), int(is_correct)))
+                            "(user_id, year, month, day, answered, correct) "
+                            "values (%s, %s, %s, %s, %s, %s)",
+                            (uid, today.year, today.month, today.day, json.dumps([ts]), int(is_correct)))
             elif ts in json.loads(score["answered"]):
                 return None
             else:
