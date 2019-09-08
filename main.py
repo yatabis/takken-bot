@@ -376,8 +376,8 @@ def make_score_graph(user):
     rate = 100 * graph[2] / graph[1]
     ax2.plot(graph[0], rate, color="red", linewidth=5, marker="o")
     ax2.set_ylim(0, np.max(rate) * 1.2)
-    plt.savefig(buf, format="jpeg")
-    response.content_type = "image/jpeg"
+    plt.savefig(buf, format="png")
+    response.content_type = "image/png"
     return buf.getvalue()
 
 
