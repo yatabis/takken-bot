@@ -183,7 +183,21 @@ def daily_report():
         text += f"正解数　{correct:>3}問\n"
         text += f"不正解数{answered - correct:>3}問\n"
         text += f"正答率は {rate:>4}% でした。"
-        push_text(text, s.get("user_id"))
+        user = s.get("user_id")
+        push_message({
+            "to": user,
+            "messages": [
+                {
+                    "type": "text",
+                    "text": text
+                },
+                {
+                    "type": "image",
+                    "originalContentUrl": f"https://takken-bot.herokuapp.com/scores/{user}",
+                    "previewImageUrl": f"https://takken-bot.herokuapp.com/scores/{user}",
+                }
+            ]
+        })
 
 
 # LINE API
@@ -254,14 +268,6 @@ def make_answer_message(qid, judge, token):
             'text': text
         }
     ], 'replyToken': token}
-    return message
-
-
-def make_report_message(text, report, uid):
-    message = {'messages': [
-        {'type': 'text', 'text': text},
-        {'type': 'text', 'text': report}
-    ], 'to': uid}
     return message
 
 
