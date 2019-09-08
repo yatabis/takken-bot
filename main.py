@@ -1,7 +1,9 @@
-from bottle import route, request, run, template, abort
+from bottle import route, request, response, run, template, abort
 from datetime import datetime, timedelta
+from io import BytesIO
 import json
-from operator import itemgetter
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 from pprint import pformat, pprint
 import psycopg2
@@ -147,6 +149,18 @@ def get_score_today(uid):
     correct = score["correct"]
     rate = int(correct / answered * 1000) / 10
     return f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
+
+
+def fetch_scores(user):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('select year, month, day, answered, correct '
+                        'from   scores '
+                        'where  user_id = %s '
+                        'order by year, month, day',
+                        (user,))
+            scores = cur.fetchall()
+    return scores
 
 
 def daily_report():
@@ -341,6 +355,30 @@ def line_callback():
     if debug:
         pprint('\n'.join(ret))
     return '\n'.join(ret)
+
+
+@route('/scores/<user>', method="GET")
+def make_score_graph(user):
+    scores = fetch_scores(user)
+    buf = BytesIO()
+    graph = np.zeros((3, len(scores)), dtype=np.int)
+    labels = [""] * len(scores)
+    for i, s in enumerate(scores):
+        year, month, day = s.get("year"), s.get("month"), s.get("day")
+        labels[i] = datetime(year, month, day).strftime("%b %-d\n%Y")
+        graph[0][i] = year * 10000 + month * 100 + day
+        graph[1][i] = len(json.loads(s.get("answered")))
+        graph[2][i] = s.get("correct")
+    fig, ax1 = plt.subplots()
+    ax1.bar(graph[0], graph[1], width=0.3, align='center', tick_label=labels)
+    ax1.bar(graph[0], graph[2], width=0.3, align='center', tick_label=labels)
+    ax2 = ax1.twinx()
+    rate = 100 * graph[2] / graph[1]
+    ax2.plot(graph[0], rate, color="red", linewidth=5, marker="o")
+    ax2.set_ylim(0, np.max(rate) * 1.2)
+    plt.savefig(buf, format="jpeg")
+    response.content_type = "image/jpeg"
+    return buf.getvalue()
 
 
 if __name__ == '__main__':
