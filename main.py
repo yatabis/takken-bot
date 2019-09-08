@@ -143,41 +143,43 @@ def get_score_today(uid):
             score = cur.fetchone()
     if score is None:
         return "本日はまだ問題に解答していません。"
-    answerd = len(json.loads(score["answered"]))
+    answered = len(json.loads(score["answered"]))
     correct = score["correct"]
-    rate = int(correct / answerd * 1000) / 10
+    rate = int(correct / answered * 1000) / 10
     return f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
 
 
-def daily_report(user):
-    hour = datetime.today().hour
-    if 7 < hour < 22:
-        return None
-    theday = datetime.today() + timedelta(days=0 if hour >= 0 else -1)
+def daily_report():
+    date = datetime.today() - timedelta(days=1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select first, second, third, fourth, fifth, sixth, seventh, eighth '
-                        'from scores '
-                        'where year = %s and month = %s and day = %s and user_id = %s',
-                        (theday.year, theday.month, theday.day, user))
-            score = cur.fetchone()
-            cur.execute('select name from users where id = %s', (user,))
-            name = cur.fetchone()[0]
-    text = f"お疲れ様でした。\n本日の{name}さんのスコアです。\n"
-    t, f, n = [score.count(j) for j in [True, False, None]]
-    text += f"　正解：{t}問\n不正解：{f}問\n未解答：{n}問\n"
-    if n > 6:
-        text += "継続は力なり、毎日コツコツ問題を解きましょう。"
-    elif t >= 6:
-        text += "その調子です！頑張っていきましょう。"
-    else:
-        text += "しっかりと復習をして定着させていきましょう。"
-    return text
+            cur.execute('select user_id, answered, correct '
+                        'from   scores '
+                        'where  year = %s'
+                        '   and month = %s'
+                        '   and day = %s',
+                        (date.year, date.month, date.day))
+            scores = cur.fetchall()
+    for s in scores:
+        answered = len(json.loads(s.get("answered")))
+        correct = int(s.get("correct"))
+        rate = int(correct / answered * 1000) / 10 if correct < answered else 100
+        text = "本日の最終スコアを発表します。\n"
+        text += f"解答数　{answered:>3}問\n"
+        text += f"正解数　{correct:>3}問\n"
+        text += f"不正解数{answered - correct:>3}問\n"
+        text += f"正答率は {rate:>4}% でした。"
+        push_text(text, s.get("user_id"))
 
 
 # LINE API
 def push_message(body):
     return requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
+
+
+def push_text(text, to):
+    body = {'messages': [{'type': 'text', 'text': text}], 'to': to}
+    return push_message(body)
 
 
 def reply_message(body):
@@ -212,9 +214,6 @@ def make_question_message(q, timestamp):
         message['header']['contents'] = message['header']['contents'][:2]
     message['body']['contents'][0]['text'] = f"問{q['number']}-{q['variation']}"
     message['body']['contents'][1]['text'] = statement + q['question'] if statement else q['question']
-    # if hour == 'eighth':
-    #     message['body']['contents'][1]['text'] += "\n\n(※この問題に解答すると本日のスコアを集計します。" \
-    #                                               "未解答の問題がある場合は、この問題に解答する前にまずそちらを解答してください。)"
     message['footer']['contents'][0]['action']['data'] = f"qid={q['id']}&timestamp={timestamp}&answer=True"
     message['footer']['contents'][1]['action']['data'] = f"qid={q['id']}&timestamp={timestamp}&answer=False"
     return {'type': 'flex', 'altText': q['question'], 'contents': message}
@@ -291,6 +290,9 @@ def reply_question(token):
 def question():
     time = datetime.now()
     hour, minute = time.hour, time.minute
+    if hour == 0 and minute // 10 > 0:
+        daily_report()
+        return "scores are reported."
     if hour not in [t[1] for t in QUESTION_TIMES] or minute // 10 > 0:
         return 'This is not question time.'
     q_message = {"messages": []}
