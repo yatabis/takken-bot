@@ -310,7 +310,7 @@ def reply_question(token):
 def question():
     time = datetime.now()
     hour, minute = time.hour, time.minute
-    if hour == 0 and minute // 10 > 0:
+    if hour == 0 and minute < 10:
         daily_report()
         return "scores are reported."
     if hour not in [t[1] for t in QUESTION_TIMES] or minute // 10 > 0:
