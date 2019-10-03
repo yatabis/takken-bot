@@ -374,6 +374,7 @@ def line_callback():
     return '\n'.join(ret)
 
 
+@route('/scores/<user>', method="GET")
 def make_score_graph(user):
     scores = fetch_scores(user)
     buf = BytesIO()
