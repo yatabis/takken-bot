@@ -384,7 +384,7 @@ def make_score_graph(user):
     plt.savefig(buf, format="png")
     response.content_type = "image/png"
     return buf.getvalue()
- 
+
 
 if __name__ == '__main__':
     run(host='0.0.0.0', port=os.environ.get('PORT', 443))
