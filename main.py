@@ -148,7 +148,18 @@ def get_score_today(uid):
     answered = len(json.loads(score["answered"]))
     correct = score["correct"]
     rate = int(correct / answered * 1000) / 10
-    return f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
+    goal80 = 4 * answered - 5 * correct
+    goal90 = 9 * answered - 10 * correct
+    text = f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
+    if rate < 80:
+        text += f"\n正答率80%を達成するためにはこの後{goal80}問正解する必要があります。"
+    if rate < 90:
+        text += f"\n正答率90%を達成するためにはこの後{goal90}問正解する必要があります。"
+    if rate >= 90:
+        text += "\nいい調子です！"
+    else:
+        text += "\n頑張りましょう！"
+    return text
 
 
 def fetch_scores(user):
