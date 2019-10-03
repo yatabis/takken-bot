@@ -363,16 +363,15 @@ def line_callback():
     return '\n'.join(ret)
 
 
-@route('/scores/<user>', method="GET")
 def make_score_graph(user):
     scores = fetch_scores(user)
     buf = BytesIO()
     graph = np.zeros((3, len(scores)), dtype=np.int)
     labels = [""] * len(scores)
     for i, s in enumerate(scores):
-        year, month, day = s.get("year"), s.get("month"), s.get("day")
-        labels[i] = datetime(year, month, day).strftime("%b %-d\n%Y")
-        graph[0][i] = year * 10000 + month * 100 + day
+        date = datetime(s.get("year"), s.get("month"), s.get("day"))
+        labels[i] = date.strftime("%b %-d\n%Y") if date.day % 3 == 1 else ""
+        graph[0][i] = (date - datetime(2019, 9, 6)).days
         graph[1][i] = len(json.loads(s.get("answered")))
         graph[2][i] = s.get("correct")
     fig, ax1 = plt.subplots()
@@ -380,12 +379,12 @@ def make_score_graph(user):
     ax1.bar(graph[0], graph[2], width=0.3, align='center', tick_label=labels)
     ax2 = ax1.twinx()
     rate = 100 * graph[2] / graph[1]
-    ax2.plot(graph[0], rate, color="red", linewidth=5, marker="o")
-    ax2.set_ylim(0, np.max(rate) * 1.2)
+    ax2.plot(graph[0], rate, color="red", linewidth=3, marker="o")
+    ax2.set_ylim(0, 100)
     plt.savefig(buf, format="png")
     response.content_type = "image/png"
     return buf.getvalue()
-
+ 
 
 if __name__ == '__main__':
     run(host='0.0.0.0', port=os.environ.get('PORT', 443))
