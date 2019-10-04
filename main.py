@@ -60,28 +60,25 @@ def get_description(qid):
     return dict(record)
 
 
-def cached_decrement():
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('update questions set cached = cached - 1 where cached != 0')
+# def cached_decrement():
+#     with open_pg() as conn:
+#         with conn.cursor(cursor_factory=DictCursor) as cur:
+#             cur.execute('update questions set cached = cached - 1 where cached != 0')
+#
+#
+# def set_latest(qid):
+#     cache_sise = os.environ.get('CACHE_SIZE', 10)
+#     with open_pg() as conn:
+#         with conn.cursor(cursor_factory=DictCursor) as cur:
+#             cur.execute('update questions set cached = %s where id = %s', (cache_sise, qid))
 
 
-def set_latest(qid):
+def cache_update(qid):
     cache_sise = os.environ.get('CACHE_SIZE', 10)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute('update questions set cached = cached - 1 where cached != 0')
             cur.execute('update questions set cached = %s where id = %s', (cache_sise, qid))
-
-
-def is_answered(user, hour):
-    today = datetime.today()
-    y, m, d = today.year, today.month, today.day
-    with open_pg() as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select * from scores where user_id = %s and year = %s and month = %s and day = %s',
-                        (user, y, m, d))
-            result = cur.fetchone()
-    return result[hour] if result is not None else None
 
 
 def get_name(part=1, chapter=1, section=1):
@@ -216,11 +213,6 @@ def push_message(body):
     return requests.post(PUSH_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
 
-def push_text(text, to):
-    body = {'messages': [{'type': 'text', 'text': text}], 'to': to}
-    return push_message(body)
-
-
 def reply_message(body):
     return requests.post(REPLY_EP, data=json.dumps(body, ensure_ascii=False).encode('utf-8'), headers=DEFAULT_HEADER)
 
@@ -330,8 +322,9 @@ def question():
     for i in range(3):
         q = get_question()
         q_message["messages"].append(make_question_message(q, datetime.now().timestamp()))
-        cached_decrement()
-        set_latest(q['id'])
+        # cached_decrement()
+        # set_latest(q['id'])
+        cache_update(q['id'])
     res = broadcast_message(q_message)
     if False not in [r.status_code == 200 for r in res]:
         return 'OK'
