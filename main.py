@@ -274,6 +274,12 @@ def make_answer_message(qid, judge, token):
     return message
 
 
+def make_kakomon_message(token):
+    with open("kakomon_message.json") as j:
+        message = json.load(j)
+    return {'messages': [{'type': 'flex', 'altText': "過去問演習", 'contents': message}], 'replyToken': token}
+
+
 # callback
 def check_answer(postback):
     user_id = postback['source']['userId']
@@ -354,7 +360,9 @@ def line_callback():
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
             elif "成績" in event['message']['text']:
-                reply_text(get_score_today(event["source"]["userId"]), reply_token)
+                ret.append(reply_text(get_score_today(event["source"]["userId"]), reply_token))
+            elif "過去問" in event['message']['text']:
+                ret.append(reply_message(make_kakomon_message(reply_token)))
             elif event['message']['text'] == "登録":
                 ret.append(reply_text(os.environ.get('FORM_URI'), reply_token))
             elif event['message']['text'] == "確認":

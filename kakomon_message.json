@@ -1,0 +1,38 @@
+{
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "過去問演習を開始します。",
+        "wrap": true
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "horizontal",
+    "spacing": "sm",
+    "contents": [
+      {
+        "type": "filler"
+      },
+      {
+        "type": "button",
+        "style": "primary",
+        "height": "sm",
+        "action": {
+          "type": "uri",
+          "label": "開始",
+          "uri": "line://app/1585112109-DZYgGzyY"
+        }
+      },
+      {
+        "type": "filler"
+      }
+    ],
+    "flex": 0
+  }
+}
