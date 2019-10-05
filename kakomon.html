@@ -149,7 +149,7 @@
                     .then(function (json) {
                         app.correct = json.correct
                         for (let i = 0; i < 50; i++) {
-                            if (app.answers[i] === app.correct) {
+                            if (app.answers[i] === app.correct[i]) {
                                 app.score++
                             }
                         }
