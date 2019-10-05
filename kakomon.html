@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta http-equiv='X-UA-Compatible' content='ie=edge'>
+  <title>過去問演習</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div id="page">
+  <div id="start" v-if="page === 'start'">
+    <h1 class="text-center">過去問演習</h1>
+
+    <select name="year" id="year" class="form-control w-auto mx-auto" v-model="year">
+      <option value="30">平成30年度</option>
+      <option value="29">平成29年度</option>
+      <option value="28">平成28年度</option>
+    </select>
+
+    <div class="w-auto m-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="mode" id="practice-mode" value="practice-mode" v-model="mode">
+        <label class="form-check-label" for="practice-mode">練習モード</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="mode" id="real-mode" value="real-mode" v-model="mode" disabled>
+        <label class="form-check-label" for="real-mode">本番モード</label>
+      </div>
+    </div>
+
+    <div id="mode-message" class="mx-auto">[[ mode_message ]]</div>
+
+    <div class="text-center mt-4">
+      <button @click="start" id="start-btn" class="button btn-success">開始</button>
+    </div>
+  </div>
+
+  <div id="answer" v-else-if="page === 'answer'">
+    <h1 class="text-center">解答用紙</h1>
+
+    <div class="row" v-for="(ans, idx) in answers">
+      <div class="col">問[[ idx + 1 ]]. </div>
+      <div class="col">
+        <input type="radio" :id="qid(idx+1, 1)" :name="'q' + (idx + 1)" :value="1" v-model="answers[idx]">
+        <label :for="qid(idx+1, 1)">1</label>
+      </div>
+      <div class="col">
+        <input type="radio" :id="qid(idx+1, 2)" :name="'q' + (idx + 1)" :value="2" v-model="answers[idx]">
+        <label :for="qid(idx+1, 2)">2</label>
+      </div>
+      <div class="col">
+        <input type="radio" :id="qid(idx+1, 3)" :name="'q' + (idx + 1)" :value="3" v-model="answers[idx]">
+        <label :for="qid(idx+1, 3)">3</label>
+      </div>
+      <div class="col">
+        <input type="radio" :id="qid(idx+1, 4)" :name="'q' + (idx + 1)" :value="4" v-model="answers[idx]">
+        <label :for="qid(idx+1, 4)">4</label>
+      </div>
+    </div>
+
+    <button @click="result" id="result-btn" class="button btn-success m-5">解答おわり</button>
+
+    <div class="card fixed-bottom" style="left: 67vw; width: 30vw">
+      <div class="card-header">残り時間</div>
+      <h6 class="card-body">[[ rest_time ]]</h6>
+    </div>
+  </div>
+
+  <div id="check" v-else-if="page === 'check'">
+    <div class="spinner-border text-success float-left m-2" style="width: 3rem; height: 3rem" role="status"></div>
+    <div class="m-2">答え合わせ中です。</div>
+    <div>しばらくお待ちください。<span v-for="i in waiting">。</span></div>
+  </div>
+
+  <div id="result" v-else-if="page === 'result'">
+    <h1 class="text-center">結果発表</h1>
+    <div class="h3 m-2 text-center">[[ score ]]問正解！！</div>
+    <div class="row" v-for="(ans, idx) in answers">
+      <div class="col">問[[ idx + 1 ]]. </div>
+      <div class="col">
+        <span v-if="ans === correct[idx]">⭕️</span>
+        <span v-else>❌</span>
+      </div>
+      <div class="col">解答：[[ ans ]]</div>
+      <div class="col">正解：[[ correct[idx] ]]</div>
+    </div>
+  </div>
+
+  <div id="error" v-else>エラー</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+<script>
+    const app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#page',
+        data: {
+            page: 'start',
+            year: '30',
+            mode: 'practice-mode',
+            answers: Array(50).fill(0),
+            rest_time: 0,
+            intervalId: 0,
+            waiting: 0,
+            correct: Array(50).fill(0),
+            score: 0
+        },
+        computed: {
+            mode_message: function () {
+                if (this.mode === 'practice-mode') {
+                    return '制限時間を超えても解答を続けることができます。'
+                } else if (this.mode === 'real-mode') {
+                    return '制限時間を越えると解答ができなくなります。'
+                } else {
+                    return 'エラー'
+                }
+            },
+        },
+        methods: {
+            start: function () {
+                this.page = 'answer'
+                const end = new Date()
+                end.setHours(end.getHours() + 2)
+                this.intervalId = setInterval(function () {
+                    const now = new Date()
+                    const rest = end - now
+                    const hour = Math.floor(rest / (60 * 60 * 1000))
+                    const minute = Math.floor(rest / (60 * 1000)) - 60 * hour
+                    const second = Math .floor(rest / 1000) - 60 * 60 * hour - 60 * minute
+                    app.rest_time = `${hour}:${('0' + minute).slice(-2)}:${('0' + second).slice(-2)}`
+                }, 100)
+            },
+            result: function () {
+                window.scroll(0, 0)
+                this.page = 'check'
+                clearInterval(this.intervalId)
+                this.intervalId = setInterval(function () {
+                    app.waiting = (app.waiting + 1) % 3
+                }, 1000)
+                fetch(`https://takken-bot.herokuapp.com/kakomon/${this.year}`)
+                    .then(function (response) {
+                        return response.json()
+                    })
+                    .then(function (json) {
+                        app.correct = json.correct
+                        for (let i = 0; i < 50; i++) {
+                            if (app.answers[i] === app.correct) {
+                                app.score++
+                            }
+                        }
+                        app.page = 'result'
+                        clearInterval(app.intervalId)
+                    })
+            },
+            qid: function (idx, option) {
+                return 'q' + idx + '-' + option
+            }
+        }
+    })
+</script>
+
+</body>
+</html>

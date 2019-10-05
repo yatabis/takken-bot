@@ -1,4 +1,4 @@
-from bottle import route, request, response, run, template, abort
+from bottle import route, request, response, run, template, HTTPResponse
 from datetime import datetime, timedelta
 from io import BytesIO
 import json
@@ -389,6 +389,25 @@ def make_score_graph(user):
     plt.savefig(buf, format="png")
     response.content_type = "image/png"
     return buf.getvalue()
+
+
+@route('/kakomon', method="GET")
+def kakomon():
+    return template("kakomon.html")
+
+
+@route('/kakomon/<year>', method="GET")
+def kakomon_answer(year):
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("select * "
+                        "from   kakomon "
+                        "where  year = %s",
+                        (f"H{year}",))
+            correct = cur.fetchone()
+    if correct is None:
+        return HTTPResponse(status=404, body="エラー")
+    return HTTPResponse(status=200, body={"correct": list(correct)[1:]}, headers={"Content-Type": "application/json"})
 
 
 if __name__ == '__main__':
