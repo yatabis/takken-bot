@@ -138,7 +138,6 @@ def get_score_today(uid):
                     "point": answered + correct
                 })
             ranking.sort(key=lambda x: -x["point"])
-            pprint(ranking)
             ranked_users = [r["user"] for r in ranking]
             rank = ranked_users.index(uid) if uid in ranked_users else None
             if rank is None:
@@ -209,7 +208,7 @@ def daily_report():
                     "answered": answered,
                     "correct": correct,
                     "rate": rate,
-                    "point": correct * rate
+                    "point": answered + correct
                 })
             ranking.sort(key=lambda x: -x["point"])
             cur.execute('select name '
