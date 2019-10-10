@@ -60,19 +60,6 @@ def get_description(qid):
     return dict(record)
 
 
-# def cached_decrement():
-#     with open_pg() as conn:
-#         with conn.cursor(cursor_factory=DictCursor) as cur:
-#             cur.execute('update questions set cached = cached - 1 where cached != 0')
-#
-#
-# def set_latest(qid):
-#     cache_sise = os.environ.get('CACHE_SIZE', 10)
-#     with open_pg() as conn:
-#         with conn.cursor(cursor_factory=DictCursor) as cur:
-#             cur.execute('update questions set cached = %s where id = %s', (cache_sise, qid))
-
-
 def cache_update(qid):
     cache_sise = os.environ.get('CACHE_SIZE', 10)
     with open_pg() as conn:
@@ -182,30 +169,56 @@ def daily_report():
                         '   and day = %s',
                         (date.year, date.month, date.day))
             scores = cur.fetchall()
-    for s in scores:
-        answered = len(json.loads(s.get("answered")))
-        correct = int(s.get("correct"))
-        rate = int(correct / answered * 1000) / 10 if correct < answered else 100
-        text = "本日の最終スコアを発表します。\n"
-        text += f"解答数　{answered:>3}問\n"
-        text += f"正解数　{correct:>3}問\n"
-        text += f"不正解数{answered - correct:>3}問\n"
-        text += f"正答率は {rate:>4}% でした。"
-        user = s.get("user_id")
-        push_message({
-            "to": user,
-            "messages": [
-                {
-                    "type": "text",
-                    "text": text
-                },
-                {
-                    "type": "image",
-                    "originalContentUrl": f"https://takken-bot.herokuapp.com/scores/{user}",
-                    "previewImageUrl": f"https://takken-bot.herokuapp.com/scores/{user}",
-                }
-            ]
-        })
+            ranking = []
+            for s in scores:
+                answered = len(json.loads(s.get("answered")))
+                correct = int(s.get("correct"))
+                rate = int(correct / answered * 1000) / 10 if correct < answered else 100
+                ranking.append({
+                    "user": s.get("user_id"),
+                    "answered": answered,
+                    "correct": correct,
+                    "rate": rate,
+                    "point": correct * rate
+                })
+            ranking.sort(key=lambda x: -x["point"])
+            cur.execute('select name '
+                        'from   users '
+                        'where  id = %s',
+                        (ranking[0]["user"],))
+            top = cur.fetchone()[0]
+            for i, u in enumerate(ranking):
+                score_text = "本日のスコアを発表します。\n"
+                score_text += f"解答数　{u['answered']:>3}問\n"
+                score_text += f"正解数　{u['correct']:>3}問\n"
+                score_text += f"不正解数{u['answered'] - u['correct']:>3}問\n"
+                score_text += f"正答率は {u['rate']:>4}% でした。"
+                ranking_text = f"デイリーランキング{i + 1}位です。\n"
+                if i == 0:
+                    ranking_text += "おめでとうございます！この調子で頑張りましょう。"
+                else:
+                    ranking_text += f"1位は{top}さんで、" \
+                                    f"{ranking[0]['correct']}問正解し" \
+                                    f"正答率は{ranking[0]['rate']}%でした。\n" \
+                                    f"頑張りましょう。"
+                push_message({
+                    "to": u["user"],
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": score_text
+                        },
+                        {
+                            "type": "text",
+                            "text": ranking_text
+                        },
+                        {
+                            "type": "image",
+                            "originalContentUrl": f"https://takken-bot.herokuapp.com/scores/{u['user']}",
+                            "previewImageUrl": f"https://takken-bot.herokuapp.com/scores/{u['user']}"
+                        }
+                    ]
+                })
 
 
 # LINE API
