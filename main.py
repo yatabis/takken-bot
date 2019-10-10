@@ -119,31 +119,61 @@ def get_score_today(uid):
     today = datetime.now()
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("select answered, correct "
-                        "from   scores "
-                        "where  user_id = %s"
-                        "   and year = %s"
-                        "   and month = %s"
-                        "   and day = %s",
-                        (uid, today.year, today.month, today.day))
-            score = cur.fetchone()
-    if score is None:
-        return "本日はまだ問題に解答していません。"
-    answered = len(json.loads(score["answered"]))
-    correct = score["correct"]
-    rate = int(correct / answered * 1000) / 10
-    goal80 = 4 * answered - 5 * correct
-    goal90 = 9 * answered - 10 * correct
-    text = f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
-    if rate < 80:
-        text += f"\n正答率80%を達成するためにはこの後{goal80}問正解する必要があります。"
-    if rate < 90:
-        text += f"\n正答率90%を達成するためにはこの後{goal90}問正解する必要があります。"
-    if rate >= 90:
-        text += "\nいい調子です！"
-    else:
-        text += "\n頑張りましょう！"
-    return text
+            cur.execute('select user_id, answered, correct '
+                        'from   scores '
+                        'where  year = %s'
+                        '   and month = %s'
+                        '   and day = %s',
+                        (today.year, today.month, today.day))
+            scores = cur.fetchall()
+            ranking = []
+            for s in scores:
+                answered = len(json.loads(s.get("answered")))
+                correct = int(s.get("correct"))
+                ranking.append({
+                    "user": s.get("user_id"),
+                    "answered": answered,
+                    "correct": correct,
+                    "rate": int(correct / answered * 1000) / 10 if correct < answered else 100,
+                    "point": answered + correct
+                })
+            ranking.sort(key=lambda x: -x["point"])
+            pprint(ranking)
+            ranked_users = [r["user"] for r in ranking]
+            rank = ranked_users.index(uid) if uid in ranked_users else None
+            if rank is None:
+                return "本日はまだ問題に解答していません。"
+            answered = ranking[rank]["answered"]
+            correct = ranking[rank]["correct"]
+            rate = ranking[rank]["rate"]
+            goal80 = 4 * answered - 5 * correct
+            goal90 = 9 * answered - 10 * correct
+            score_text = f"本日のスコアです。\n正解した問題は{correct}問で、正答率は{rate}%です。"
+            if rate < 80:
+                score_text += f"\n正答率80%まであと{goal80}問です。"
+            if rate < 90:
+                score_text += f"\n正答率90%まであと{goal90}問です。"
+            if rate >= 90:
+                score_text += "\nいい調子です！"
+            else:
+                score_text += "\n頑張りましょう！"
+            goal1 = (ranking[0]["point"] - ranking[rank]["point"] + 1) // 2
+            ranking_text = f"ランキングは現在{rank + 1}位です。\n" \
+                           f"1位まであと{goal1}問です。\n"
+            if rank == 0:
+                ranking_text += "その調子です！"
+            else:
+                ranking_text += "頑張りましょう！"
+            return [
+                {
+                    "type": "text",
+                    "text": score_text
+                },
+                {
+                    "type": "text",
+                    "text": ranking_text
+                }
+            ]
 
 
 def fetch_scores(user):
@@ -366,14 +396,20 @@ def line_callback():
             if event["postback"]["data"] == "question":
                 ret.append(reply_question(reply_token))
             elif event["postback"]["data"] == "score":
-                reply_text(get_score_today(event["source"]["userId"]), reply_token)
+                ret.append(reply_message({
+                    "messages": get_score_today(event["source"]["userId"]),
+                    "replyToken": reply_token
+                }))
             else:
                 ret.append(check_answer(event))
         elif event_type == 'message' and event['message']['type'] == 'text':
             if "問題" in event['message']['text']:
                 ret.append(reply_question(reply_token))
             elif "成績" in event['message']['text']:
-                ret.append(reply_text(get_score_today(event["source"]["userId"]), reply_token))
+                ret.append(reply_message({
+                    "messages": get_score_today(event["source"]["userId"]),
+                    "replyToken": reply_token
+                }))
             elif "過去問" in event['message']['text']:
                 ret.append(reply_message(make_kakomon_message(reply_token)))
             elif event['message']['text'] == "登録":
