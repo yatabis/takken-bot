@@ -87,7 +87,7 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool, time: float):
                         (qid,))
             is_correct = cur.fetchone()[0] is ans
             point = 2 if is_correct else 1
-            point += 1 if time < 30 else 0
+            point += 1 if time < 30 and is_correct else 0
             cur.execute("select answered, correct, score "
                         "from   scores "
                         "where  user_id = %s"
