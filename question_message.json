@@ -50,7 +50,8 @@
         "action": {
           "type": "postback",
           "label": "○",
-          "data": "qid={qid}&hour={hour}&answer=True"
+          "data": "qid={qid}&hour={hour}&answer=True",
+          "displayText": "あなたの解答：◯"
         }
       },
       {
@@ -60,7 +61,8 @@
         "action": {
           "type": "postback",
           "label": "×",
-          "data": "qid={qid}&hour={hour}&answer=False"
+          "data": "qid={qid}&hour={hour}&answer=False",
+          "displayText": "あなたの解答：×"
         }
       },
       {
