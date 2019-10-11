@@ -156,13 +156,14 @@ def get_score_today(uid):
                 score_text += "\nいい調子です！"
             else:
                 score_text += "\n頑張りましょう！"
-            goal1 = (ranking[0]["point"] - ranking[rank]["point"] + 1) // 2
-            ranking_text = f"ランキングは現在{rank + 1}位です。\n" \
-                           f"1位まであと{goal1}問です。\n"
+            ranking_text = f"ランキングポイントは現在{ranking[rank]['point']}点で、{rank + 1}位です。\n"
             if rank == 0:
-                ranking_text += "その調子です！"
-            else:
-                ranking_text += "頑張りましょう！"
+                ranking_text += f"2位との差は{ranking[0]['point'] - ranking[1]['point']}点です。"
+            elif rank == 1:
+                ranking_text += f"1位との差は{ranking[0]['point'] - ranking[1]['point']}点です。"
+                ranking_text += f"3位との差は{ranking[1]['point'] - ranking[2]['point']}点です。"
+            elif rank == 2:
+                ranking_text += f"2位との差は{ranking[1]['point'] - ranking[2]['point']}点です。"
             return [
                 {
                     "type": "text",
@@ -342,7 +343,7 @@ def check_answer(postback):
     else:
         time = datetime.now().timestamp() - float(timestamp)
         if time < 60:
-            time_str = f"{round(time)} 秒"
+            time_str = f"{round(time, 6)} 秒"
         elif time < 60 * 5:
             time_str = f"{int(time / 60)}分{int(time % 60)}秒"
         else:
