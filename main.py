@@ -106,7 +106,7 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool, time: float):
             else:
                 tss = json.loads(score["answered"]) + [ts]
                 correct = score["correct"] + int(is_correct)
-                point += score["socre"]
+                point += score["score"]
                 cur.execute("update scores set "
                             "answered = %s,"
                             "correct = %s,"
@@ -160,14 +160,14 @@ def get_score_today(uid):
                 score_text += "\nいい調子です！"
             else:
                 score_text += "\n頑張りましょう！"
-            ranking_text = f"スコアは現在{ranking[rank]['socre']}点で、{rank + 1}位です。\n"
+            ranking_text = f"スコアは現在{ranking[rank]['score']}点で、{rank + 1}位です。\n"
             if rank == 0:
-                ranking_text += f"2位との差は{ranking[0]['socre'] - ranking[1]['socre']}点です。"
+                ranking_text += f"2位との差は{ranking[0]['score'] - ranking[1]['score']}点です。"
             elif rank == 1:
-                ranking_text += f"1位との差は{ranking[0]['socre'] - ranking[1]['socre']}点です。\n"
-                ranking_text += f"3位との差は{ranking[1]['socre'] - ranking[2]['socre']}点です。"
+                ranking_text += f"1位との差は{ranking[0]['score'] - ranking[1]['score']}点です。\n"
+                ranking_text += f"3位との差は{ranking[1]['score'] - ranking[2]['score']}点です。"
             elif rank == 2:
-                ranking_text += f"2位との差は{ranking[1]['socre'] - ranking[2]['socre']}点です。"
+                ranking_text += f"2位との差は{ranking[1]['score'] - ranking[2]['score']}点です。"
             return [
                 {
                     "type": "text",
@@ -213,9 +213,9 @@ def daily_report():
                     "answered": answered,
                     "correct": correct,
                     "rate": rate,
-                    "socre": s.get("score")
+                    "score": s.get("score")
                 })
-            ranking.sort(key=lambda x: -x["socre"])
+            ranking.sort(key=lambda x: -x["score"])
             cur.execute('select name '
                         'from   users '
                         'where  id = %s',
