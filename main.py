@@ -77,7 +77,7 @@ def get_name(part=1, chapter=1, section=1):
     return result['part_name'], result['chapter_name'], result['section_name'], result['statement']
 
 
-def upsert_score(uid: str, qid: str, ts: float, ans: bool):
+def upsert_score(uid: str, qid: str, ts: float, ans: bool, time: float):
     today = datetime.now()
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -86,7 +86,9 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool):
                         "where  id = %s",
                         (qid,))
             is_correct = cur.fetchone()[0] is ans
-            cur.execute("select answered, correct "
+            point = 2 if is_correct else 1
+            point += 1 if time < 30 else 0
+            cur.execute("select answered, correct, score "
                         "from   scores "
                         "where  user_id = %s"
                         "   and year = %s"
@@ -96,22 +98,24 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool):
             score = cur.fetchone()
             if score is None:
                 cur.execute("insert into scores "
-                            "(user_id, year, month, day, answered, correct) "
-                            "values (%s, %s, %s, %s, %s, %s)",
-                            (uid, today.year, today.month, today.day, json.dumps([ts]), int(is_correct)))
+                            "(user_id, year, month, day, answered, correct, score) "
+                            "values (%s, %s, %s, %s, %s, %s, %s)",
+                            (uid, today.year, today.month, today.day, json.dumps([ts]), int(is_correct), point))
             elif ts in json.loads(score["answered"]):
                 return None
             else:
                 tss = json.loads(score["answered"]) + [ts]
                 correct = score["correct"] + int(is_correct)
+                point += score["point"]
                 cur.execute("update scores set "
                             "answered = %s,"
-                            "correct = %s "
+                            "correct = %s,"
+                            "score = %s "
                             "where  user_id = %s"
                             "   and year = %s"
                             "   and month = %s"
                             "   and day = %s",
-                            (json.dumps(tss), correct, uid, today.year, today.month, today.day))
+                            (json.dumps(tss), correct, point, uid, today.year, today.month, today.day))
     return is_correct
 
 
@@ -333,7 +337,8 @@ def check_answer(postback):
     user_id = postback['source']['userId']
     token = postback['replyToken']
     qid, timestamp, ans = [p.split('=')[1] for p in postback['postback']['data'].split('&')]
-    is_correct = upsert_score(user_id, qid, float(timestamp), ans == "True")
+    time = datetime.now().timestamp() - float(timestamp)
+    is_correct = upsert_score(user_id, qid, float(timestamp), ans == "True", time)
     if is_correct is None:
         q = get_description(qid)
         text = f"{q['part']} 第{q['chapter']}章 問{q['number']}-{q['variation']}\n"
@@ -341,7 +346,6 @@ def check_answer(postback):
         text += f"{q['description']}"
         res = reply_text(text, token)
     else:
-        time = datetime.now().timestamp() - float(timestamp)
         if time < 60:
             time_str = f"{round(time, 6)} 秒"
         elif time < 60 * 5:
