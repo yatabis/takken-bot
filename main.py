@@ -106,7 +106,7 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool, time: float):
             else:
                 tss = json.loads(score["answered"]) + [ts]
                 correct = score["correct"] + int(is_correct)
-                point += score["point"]
+                point += score["socre"]
                 cur.execute("update scores set "
                             "answered = %s,"
                             "correct = %s,"
@@ -123,7 +123,7 @@ def get_score_today(uid):
     today = datetime.now()
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select user_id, answered, correct '
+            cur.execute('select user_id, answered, correct, score '
                         'from   scores '
                         'where  year = %s'
                         '   and month = %s'
@@ -139,9 +139,9 @@ def get_score_today(uid):
                     "answered": answered,
                     "correct": correct,
                     "rate": int(correct / answered * 1000) / 10 if correct < answered else 100,
-                    "point": answered + correct
+                    "score": s.get["score"]
                 })
-            ranking.sort(key=lambda x: -x["point"])
+            ranking.sort(key=lambda x: -x["score"])
             ranked_users = [r["user"] for r in ranking]
             rank = ranked_users.index(uid) if uid in ranked_users else None
             if rank is None:
@@ -160,14 +160,14 @@ def get_score_today(uid):
                 score_text += "\nいい調子です！"
             else:
                 score_text += "\n頑張りましょう！"
-            ranking_text = f"スコアは現在{ranking[rank]['point']}点で、{rank + 1}位です。\n"
+            ranking_text = f"スコアは現在{ranking[rank]['socre']}点で、{rank + 1}位です。\n"
             if rank == 0:
-                ranking_text += f"2位との差は{ranking[0]['point'] - ranking[1]['point']}点です。"
+                ranking_text += f"2位との差は{ranking[0]['socre'] - ranking[1]['socre']}点です。"
             elif rank == 1:
-                ranking_text += f"1位との差は{ranking[0]['point'] - ranking[1]['point']}点です。\n"
-                ranking_text += f"3位との差は{ranking[1]['point'] - ranking[2]['point']}点です。"
+                ranking_text += f"1位との差は{ranking[0]['socre'] - ranking[1]['socre']}点です。\n"
+                ranking_text += f"3位との差は{ranking[1]['socre'] - ranking[2]['socre']}点です。"
             elif rank == 2:
-                ranking_text += f"2位との差は{ranking[1]['point'] - ranking[2]['point']}点です。"
+                ranking_text += f"2位との差は{ranking[1]['socre'] - ranking[2]['socre']}点です。"
             return [
                 {
                     "type": "text",
@@ -196,7 +196,7 @@ def daily_report():
     date = datetime.today() - timedelta(days=1)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute('select user_id, answered, correct '
+            cur.execute('select user_id, answered, correct, score '
                         'from   scores '
                         'where  year = %s'
                         '   and month = %s'
@@ -213,9 +213,9 @@ def daily_report():
                     "answered": answered,
                     "correct": correct,
                     "rate": rate,
-                    "point": answered + correct
+                    "socre": s.get("score")
                 })
-            ranking.sort(key=lambda x: -x["point"])
+            ranking.sort(key=lambda x: -x["socre"])
             cur.execute('select name '
                         'from   users '
                         'where  id = %s',
