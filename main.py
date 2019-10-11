@@ -292,7 +292,7 @@ def make_question_message(q, timestamp):
     return {'type': 'flex', 'altText': q['question'], 'contents': message}
 
 
-def make_answer_message(qid, judge, token):
+def make_answer_message(qid, judge, time, token):
     q = get_description(qid)
     stk = random.choice(OK_STICKER if judge else NG_STICKER)
     part, chapter, section, statement = get_name(q['part'], q['chapter'], q['section'])
@@ -311,6 +311,10 @@ def make_answer_message(qid, judge, token):
         {
             'type': 'text',
             'text': text
+        },
+        {
+            'type': 'text',
+            'text': time
         }
     ], 'replyToken': token}
     return message
@@ -335,7 +339,14 @@ def check_answer(postback):
         text += f"{q['description']}"
         res = reply_text(text, token)
     else:
-        a_message = make_answer_message(qid, is_correct, token)
+        time = datetime.now().timestamp() - float(timestamp)
+        if time < 60:
+            time_str = f"{round(time)} 秒"
+        elif time < 60 * 5:
+            time_str = f"{int(time / 60)}分{int(time % 60)}秒"
+        else:
+            time_str = None
+        a_message = make_answer_message(qid, is_correct, time_str, token)
         res = reply_message(a_message)
     if res.status_code == 200:
         return 'OK'
