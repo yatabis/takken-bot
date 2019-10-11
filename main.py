@@ -311,12 +311,13 @@ def make_answer_message(qid, judge, time, token):
         {
             'type': 'text',
             'text': text
-        },
-        {
-            'type': 'text',
-            'text': time
         }
     ], 'replyToken': token}
+    if time is not None:
+        message['messages'].append({
+            'type': 'text',
+            'text': time
+        })
     return message
 
 
