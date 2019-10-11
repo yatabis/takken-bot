@@ -139,7 +139,7 @@ def get_score_today(uid):
                     "answered": answered,
                     "correct": correct,
                     "rate": int(correct / answered * 1000) / 10 if correct < answered else 100,
-                    "score": s.get["score"]
+                    "score": s.get("score")
                 })
             ranking.sort(key=lambda x: -x["score"])
             ranked_users = [r["user"] for r in ranking]
