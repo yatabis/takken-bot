@@ -414,8 +414,7 @@ def line_callback():
     event_list = request.json['events']
     ret = []
     for event in event_list:
-        if debug:
-            pprint(event)
+        pprint(event)
         event_type = event['type']
         reply_token = event['replyToken']
         if event_type == 'postback':
