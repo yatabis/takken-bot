@@ -442,9 +442,9 @@ def line_callback():
         else:
             ret.append('OK')
     # FIXME: レスポンスの形式を統一させる。どのタイミングでテキストにするか。
-    if debug:
-        pprint('\n'.join(ret))
-    return '\n'.join(ret)
+    # if debug:
+    #     pprint('\n'.join(ret))
+    # return '\n'.join(ret)
 
 
 @route('/scores/<user>', method="GET")
