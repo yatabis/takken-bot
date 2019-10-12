@@ -152,7 +152,10 @@ def get_score_today(uid):
             ranked_users = [r["user"] for r in ranking]
             rank = ranked_users.index(uid) if uid in ranked_users else None
             if rank is None:
-                return "本日はまだ問題に解答していません。"
+                return [{
+                    "type": "text",
+                    "text": "本日はまだ問題に解答していません。"
+                }]
             answered = ranking[rank]["answered"]
             correct = ranking[rank]["correct"]
             rate = ranking[rank]["rate"]
@@ -407,7 +410,7 @@ def question():
 @route('/line-callback', method='POST')
 def line_callback():
     # if os.environ.get('MENTAINANCE', False)
-    debug = os.environ.get('DEBUG', False)
+    # debug = os.environ.get('DEBUG', False)
     event_list = request.json['events']
     ret = []
     for event in event_list:
