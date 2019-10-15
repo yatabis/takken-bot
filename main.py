@@ -171,11 +171,12 @@ def get_score_today(uid):
             else:
                 score_text += "\n頑張りましょう！"
             ranking_text = f"スコアは現在{ranking[rank]['score']}点で、{rank + 1}位です。\n"
-            if rank == 0:
+            if rank == 0 and len(ranking) > 1:
                 ranking_text += f"2位との差は{ranking[0]['score'] - ranking[1]['score']}点です。"
             elif rank == 1:
                 ranking_text += f"1位との差は{ranking[0]['score'] - ranking[1]['score']}点です。\n"
-                ranking_text += f"3位との差は{ranking[1]['score'] - ranking[2]['score']}点です。"
+                if len(ranking) > 2:
+                    ranking_text += f"3位との差は{ranking[1]['score'] - ranking[2]['score']}点です。"
             elif rank == 2:
                 ranking_text += f"2位との差は{ranking[1]['score'] - ranking[2]['score']}点です。"
             return [
