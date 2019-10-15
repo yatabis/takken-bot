@@ -94,7 +94,10 @@ def upsert_score(uid: str, qid: str, ts: float, ans: bool, time: float):
                 else:
                     point = 3
             else:
-                point = 1
+                if time < 30:
+                    point = -2
+                else:
+                    point = -1
             cur.execute("select answered, correct, score "
                         "from   scores "
                         "where  user_id = %s"
